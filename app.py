@@ -5,11 +5,15 @@ import cv2
 import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QAction, QGraphicsView, QGraphicsScene, QSizePolicy, QFrame, QGraphicsPixmapItem, \
+    QPushButton
+from torch import layout
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
-from interactive_demo.wrappers import FocusButton, FocusLabelFrame
+from interactive_demo.wrappers import FocusLabelFrame
 from isegm.inference import utils
 from isegm.utils import exp
 
@@ -26,11 +30,24 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
                                                 predictor_params={'brs_mode': 'NoBRS'},
                                                 update_image_callback=self._update_image)
 
+        # 创建保存遮罩按钮
+        self.save_mask_btn = QPushButton('Save mask', self)
+        self.save_mask_btn.clicked.connect(self._save_mask_callback)
+        self.save_mask_btn.setEnabled(False)  # 设置按钮不可用
+
+        # 创建加载遮罩按钮
+        self.load_mask_btn = QPushButton('Load mask', self)
+        self.load_mask_btn.clicked.connect(self._load_mask_callback)
+        self.load_mask_btn.setEnabled(False)  # 设置按钮不可用
+
         self._init_state()
         self._add_menu()
-        # self.setupUi(self)
-        # self._add_canvas()
+        self._add_canvas()
         # self._add_buttons()
+
+        # def _update_image(self, reset_canvas=False):
+        self.image_item = QGraphicsPixmapItem()
+        self.canvas_scene.addItem(self.image_item)
 
     # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
     # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
@@ -148,26 +165,22 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         exit_action.triggered.connect(self.close)
         menubar.addAction(exit_action)
 
+    # 建一个包含图像显示的画布，并将其添加到用户界面中。
     def _add_canvas(self):
-        self.canvas_frame = FocusLabelFrame(self)
-        self.canvas = QtWidgets.QWidget(self.canvas_frame)
-        self.canvas.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.canvas.setFixedSize(400, 400)
+        self.canvas_frame = QFrame(self.centralWidget())  # 使用 central_widget 作为父控件
+        self.canvas_frame.setObjectName("canvas_frame")
+        self.canvas_frame.setStyleSheet("border: 1px solid black;")
+
+        self.canvas_view = QGraphicsView(self.canvas_frame)
+        self.canvas_view.setObjectName("canvas_view")
+        self.canvas_view.setStyleSheet("background-color: white;")
+        self.canvas_view.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.canvas_scene = QGraphicsScene(self.canvas_frame)
+        self.canvas_view.setScene(self.canvas_scene)
+
+        self.canvas_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
         self.image_on_canvas = None
-        self.canvas_frame_layout = QtWidgets.QVBoxLayout(self.canvas_frame)
-        label = QtWidgets.QLabel("Image Canvas")  # 替换成您想要的组件名称
-        self.canvas_frame_layout.addWidget(label)
-        # 将 self.canvas 组件添加到名为 self.canvas_frame_layout 的布局管理器中
-        self.canvas_frame_layout.addWidget(self.canvas)
-        # self.canvas_frame_layout分配给组件self.canvas_frame
-        self.canvas_frame.setLayout(self.canvas_frame_layout)
-        # 子组件的对齐方式。在这里，对齐方式被设置为左对齐和顶部对齐
-        self.canvas_frame_layout.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-        self.canvas_frame_layout.setContentsMargins(5, 5, 5, 5)
-        # 将 self.canvas_frame 放入父窗口的布局中
-        self.layout().addWidget(self.canvas_frame)
-        # 设置自动扩展   如果父部件的大小增加，self.canvas_frame 会尽量扩展以填充更多的空间  也适用于高度
-        self.canvas_frame.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 
     def _add_buttons(self):
         self.control_frame = FocusLabelFrame(self)
@@ -234,6 +247,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
             #
             self.controller.set_image(image)
+            # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_btn.setEnabled(True)
             self.load_mask_btn.setEnabled(True)
 
@@ -269,23 +283,33 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
-        # 生成可视化  alpha_blend  click_radius参数从self.state中获取的
-        image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'],
-                                                  click_radius=self.state['click_radius'])
-        if self.image_on_canvas is None:
-            self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
-            self.image_on_canvas.register_click_callback(self._click_callback)
+        # # 生成可视化  alpha_blend  click_radius参数从self.state中获取的
+        # image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'],
+        #                                           click_radius=self.state['click_radius'])
+        # if self.image_on_canvas is None:
+        #     self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
+        #     self.image_on_canvas.register_click_callback(self._click_callback)
+        #
+        # self._set_click_dependent_widgets_state()
+        # # 如果生成的图像不为None，则将图像转换为QImage对象，以便在PyQt中进行处理。然后，创建一个QPixmap对象，将QImage转换为QPixmap，
+        # # 并将其设置为画布（self.canvas）的图像。这将在界面上显示生成的可视化内容。
+        # if image is not None:
+        #     height, width, channel = image.shape
+        #     bytes_per_line = 3 * width
+        #     q_image = QtGui.QImage(image.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+        #     pixmap = QtGui.QPixmap.fromImage(q_image)
+        #     self.canvas.setPixmap(pixmap)
 
-        self._set_click_dependent_widgets_state()
-        # 如果生成的图像不为None，则将图像转换为QImage对象，
-        # 以便在PyQt中进行处理。然后，创建一个QPixmap对象，将QImage转换为QPixmap，
-        # 并将其设置为画布（self.canvas）的图像。这将在界面上显示生成的可视化内容。
-        if image is not None:
-            height, width, channel = image.shape
-            bytes_per_line = 3 * width
-            q_image = QtGui.QImage(image.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
-            pixmap = QtGui.QPixmap.fromImage(q_image)
-            self.canvas.setPixmap(pixmap)
+        # 这个方法用于将新的图像更新到应用程序的图像视图
+        def _update_image(self, reset_canvas=False):
+            image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
+                                                      click_radius=self.state['click_radius'].get())
+            if image is not None:
+                q_image = QImage(image.data, image.shape[1], image.shape[0], image.shape[1] * 3, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(q_image)
+                self.image_item.setPixmap(pixmap)
+
+            self._set_click_dependent_widgets_state()
 
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = QtWidgets.QPushButton.Enabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.Disabled
