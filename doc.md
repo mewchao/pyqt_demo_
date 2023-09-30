@@ -7,7 +7,7 @@ PyQt5-Qt5-5.15.2 <br>
 PyQt5-tools-5.15.9.3.3 <br>
 pyqt5-5.15.9 <br>
 pyqt5-plugins-5.15.9.2.3 <br>
-python-dotenv-1.0.0 <br>
+python-dotenv-1.0.0 <br>sdsdsa
 qt5-applications-5.15.2.2.3 <br>
 qt5-tools-5.15.2.1.<br>
 
