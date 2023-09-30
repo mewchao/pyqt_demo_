@@ -4,14 +4,12 @@ import sys
 import cv2
 import numpy as np
 import torch
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QAction, QGraphicsView, QGraphicsScene, QSizePolicy, QFrame, QGraphicsPixmapItem, \
     QPushButton
-from torch import layout
 
-from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
 from interactive_demo.wrappers import FocusLabelFrame
 from isegm.inference import utils
@@ -45,7 +43,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._add_canvas()
         # self._add_buttons()
 
-        # def _update_image(self, reset_canvas=False):
+        # def _update_image(self, reset_canvas=False)方法添加的
         self.image_item = QGraphicsPixmapItem()
         self.canvas_scene.addItem(self.image_item)
 
@@ -69,63 +67,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             'alpha_blend': 0.5,
             'click_radius': 3,
         }
-
-    # 根据pyqtdesigner生成的代码
-    def setupUi(self, Form):
-        Form.setObjectName("Form")
-        Form.resize(500, 700)
-        self.verticalLayout = QtWidgets.QVBoxLayout(Form)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.groupBox = QtWidgets.QGroupBox(Form)
-        self.groupBox.setObjectName("groupBox")
-
-        self.frame = QtWidgets.QFrame(self.groupBox)
-        self.frame.setGeometry(QtCore.QRect(20, 60, 321, 371))
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame.setObjectName("frame")
-        # 设置自动扩展   如果父部件的大小增加，self.canvas_frame 会尽量扩展以填充更多的空间  也适用于高度
-        self.frame.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-
-        self.frame_2 = QtWidgets.QFrame(self.groupBox)
-        self.frame_2.setGeometry(QtCore.QRect(600, 60, 257, 43))
-        self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame_2.setObjectName("frame_2")
-
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame_2)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-
-        self.FinishObject = QtWidgets.QPushButton(self.groupBox)
-        self.FinishObject.setGeometry(QtCore.QRect(40, 450, 181, 23))
-        self.FinishObject.setObjectName("FinishObject")
-
-        self.pushButton = QtWidgets.QPushButton(self.groupBox)
-        self.pushButton.setGeometry(QtCore.QRect(40, 490, 181, 23))
-        self.pushButton.setObjectName("pushButton")
-
-        self.undo_clicks = QtWidgets.QPushButton(self.groupBox)
-        self.undo_clicks.setGeometry(QtCore.QRect(40, 530, 181, 23))
-        self.undo_clicks.setObjectName("undo_clicks")
-
-        self.loadpicture = QtWidgets.QPushButton(self.groupBox, text='Load picture')
-        self.loadpicture.clicked.connect(lambda: self._load_image_callback())
-
-        self.loadpicture.setGeometry(QtCore.QRect(240, 20, 111, 31))
-        self.loadpicture.setObjectName("loadpicture")
-
-        self.savemask = QtWidgets.QPushButton(self.groupBox)
-        self.savemask.setGeometry(QtCore.QRect(120, 20, 111, 31))
-        self.savemask.setObjectName("savemask")
-
-        self.exit = QtWidgets.QPushButton(self.groupBox)
-        self.exit.setGeometry(QtCore.QRect(0, 20, 111, 31))
-        self.exit.setObjectName("exit")
-
-        self.verticalLayout.addWidget(self.groupBox)
-
-        self.retranslateUi(Form)
-        QtCore.QMetaObject.connectSlotsByName(Form)
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
@@ -235,17 +176,15 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.control_frame.setLayout(control_layout)
 
     def _load_image_callback(self):
-        # 已实现
-        # 打开一个文件对话框，允许用户选择图像文件。
-        # 用户可以在文件对话框中浏览文件系统，并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。
-        # 选择的文件名存储在变量filename中
+        # 打开一个文件对话框，允许用户选择图像文件。用户可以在文件对话框中浏览文件系统，
+        # 并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。选择的文件名存储在变量filename中
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose an image", "",
                                                             "Images (*.jpg *.jpeg *.png *.bmp *.tiff);;All files (*)")
 
         if filename:
-            # 通过OpenCV（cv2）库加载图像文件并将其转换为RGB颜色空间。加载的图像存储在变量image中 应该没问题（）
+            # 通过OpenCV（cv2）库加载图像文件并将其转换为RGB颜色空间。加载的图像存储在变量image中
             image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
-            #
+            # 将新的图像设置为应用程序中的当前图像
             self.controller.set_image(image)
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_btn.setEnabled(True)
