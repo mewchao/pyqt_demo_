@@ -17,7 +17,7 @@ class InteractiveController:
         self.object_count = 0
         self._result_mask = None
         self._init_mask = None
-
+        # 当前图像
         self.image = None
         self.predictor = None
         self.device = device
@@ -25,11 +25,15 @@ class InteractiveController:
         self.predictor_params = predictor_params
         self.reset_predictor()
 
+    # 将新的图像设置为应用程序中的当前图像，并进行一些初始化工作，以便应用程序可以开始处理和显示新图像
     def set_image(self, image):
         self.image = image
+        # 创建一个与输入图像相同大小的全零掩码
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
+        # 对象计数器初始化为零，用于跟踪当前识别的对象数量
         self.object_count = 0
         self.reset_last_object(update_image=False)
+        # 可能用于更新图像显示
         self.update_image_callback(reset_canvas=True)
 
     def set_mask(self, mask):
@@ -139,16 +143,24 @@ class InteractiveController:
             result_mask[self.current_object_prob > self.prob_thresh] = self.object_count + 1
         return result_mask
 
+    # get_visualization方法用于生成图像的可视化，以便在用户界面中显示
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
             return None
 
+        # 将当前结果掩码（self.result_mask）存储在
+        # results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
         results_mask_for_vis = self.result_mask
+
+        # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、
+        # 点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
         vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
                                          clicks_list=self.clicker.clicks_list, radius=click_radius)
+
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh
             results_mask_for_vis[np.logical_not(total_mask)] = 0
+            # 将更新后的results_mask_for_vis和透明度（alpha_blend）传递给该函数，以生成包含总体掩码和点击标记的最终可视化图像
             vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
 
         return vis

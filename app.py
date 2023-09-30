@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtWidgets import QAction
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
@@ -13,7 +14,7 @@ from isegm.inference import utils
 from isegm.utils import exp
 
 
-class InteractiveDemoApp(QtWidgets.QWidget):
+class InteractiveDemoApp(QtWidgets.QMainWindow):
     def __init__(self, args, model):
         super().__init__()
         self.setWindowTitle("Reviving Iterative Training with Mask Guidance for Interactive Segmentation")
@@ -25,12 +26,14 @@ class InteractiveDemoApp(QtWidgets.QWidget):
                                                 predictor_params={'brs_mode': 'NoBRS'},
                                                 update_image_callback=self._update_image)
 
-        # self._init_state()
-        # self._add_menu()
-        self.setupUi(self)
+        self._init_state()
+        self._add_menu()
+        # self.setupUi(self)
         # self._add_canvas()
         # self._add_buttons()
 
+    # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
+    # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
     def _init_state(self):
         self.state = {
             'zoomin_params': {
@@ -118,13 +121,32 @@ class InteractiveDemoApp(QtWidgets.QWidget):
         self.savemask.setText(_translate("Form", "Savemask"))
         self.exit.setText(_translate("Form", "Exit"))
 
+    # 创建应用程序的菜单栏，并向菜单栏添加一些按钮。以下是该方法的主要功能：
     def _add_menu(self):
-        self.menubar_layout = QtWidgets.QHBoxLayout(self)
+        # 需要根据具体的需求来实现按钮的点击事件处理方法
+        menubar = self.menuBar()
 
-        self.load_image_btn = FocusButton(self)
-        self.menubar_layout.addWidget(self.load_image_btn)
+        load_image_action = QAction('Load image', self)
+        load_image_action.triggered.connect(self._load_image_callback)
+        menubar.addAction(load_image_action)
 
-        self.setLayout(self.menubar_layout)
+        save_mask_action = QAction('Save mask', self)
+        save_mask_action.triggered.connect(self._save_mask_callback)
+        save_mask_action.setEnabled(False)  # Disable initially
+        menubar.addAction(save_mask_action)
+
+        load_mask_action = QAction('Load mask', self)
+        load_mask_action.triggered.connect(self._load_mask_callback)
+        load_mask_action.setEnabled(False)  # Disable initially
+        menubar.addAction(load_mask_action)
+
+        about_action = QAction('About', self)
+        about_action.triggered.connect(self._about_callback)
+        menubar.addAction(about_action)
+
+        exit_action = QAction('Exit', self)
+        exit_action.triggered.connect(self.close)
+        menubar.addAction(exit_action)
 
     def _add_canvas(self):
         self.canvas_frame = FocusLabelFrame(self)
@@ -146,7 +168,6 @@ class InteractiveDemoApp(QtWidgets.QWidget):
         self.layout().addWidget(self.canvas_frame)
         # 设置自动扩展   如果父部件的大小增加，self.canvas_frame 会尽量扩展以填充更多的空间  也适用于高度
         self.canvas_frame.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-
 
     def _add_buttons(self):
         self.control_frame = FocusLabelFrame(self)
@@ -201,10 +222,17 @@ class InteractiveDemoApp(QtWidgets.QWidget):
         self.control_frame.setLayout(control_layout)
 
     def _load_image_callback(self):
+        # 已实现
+        # 打开一个文件对话框，允许用户选择图像文件。
+        # 用户可以在文件对话框中浏览文件系统，并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。
+        # 选择的文件名存储在变量filename中
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose an image", "",
                                                             "Images (*.jpg *.jpeg *.png *.bmp *.tiff);;All files (*)")
+
         if filename:
+            # 通过OpenCV（cv2）库加载图像文件并将其转换为RGB颜色空间。加载的图像存储在变量image中 应该没问题（）
             image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
+            #
             self.controller.set_image(image)
             self.save_mask_btn.setEnabled(True)
             self.load_mask_btn.setEnabled(True)
@@ -239,7 +267,9 @@ class InteractiveDemoApp(QtWidgets.QWidget):
         self.state['prob_thresh'] = 0.5
         self.controller.reset_last_object()
 
+    # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
+        # 生成可视化  alpha_blend  click_radius参数从self.state中获取的
         image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'],
                                                   click_radius=self.state['click_radius'])
         if self.image_on_canvas is None:
@@ -247,6 +277,9 @@ class InteractiveDemoApp(QtWidgets.QWidget):
             self.image_on_canvas.register_click_callback(self._click_callback)
 
         self._set_click_dependent_widgets_state()
+        # 如果生成的图像不为None，则将图像转换为QImage对象，
+        # 以便在PyQt中进行处理。然后，创建一个QPixmap对象，将QImage转换为QPixmap，
+        # 并将其设置为画布（self.canvas）的图像。这将在界面上显示生成的可视化内容。
         if image is not None:
             height, width, channel = image.shape
             bytes_per_line = 3 * width
