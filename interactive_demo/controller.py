@@ -35,8 +35,6 @@ class InteractiveController:
         self.object_count = 0
         # 清除之前的交互状态，以准备开始下一个对象的交互
         self.reset_last_object(update_image=False)
-        # 可能用于更新图像显示
-        self.update_image_callback(reset_canvas=True)
 
     def set_mask(self, mask):
         if self.image.shape[:2] != mask.shape[:2]:
@@ -153,14 +151,13 @@ class InteractiveController:
     # get_visualization方法用于生成图像的可视化，以便在用户界面中显示
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
+            print("fun()get_visualization:self.image is None")
             return None
 
-        # 将当前结果掩码（self.result_mask）存储在
-        # results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
+        # 将当前结果掩码（self.result_mask）存储在results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
         results_mask_for_vis = self.result_mask
 
-        # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、
-        # 点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
+        # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
         vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
                                          clicks_list=self.clicker.clicks_list, radius=click_radius)
 

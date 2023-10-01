@@ -4,6 +4,7 @@ from tkinter import messagebox, filedialog, ttk
 import cv2
 import numpy as np
 from PIL import Image
+from PyQt5.QtCore import QVariant
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
@@ -48,24 +49,23 @@ class InteractiveDemoApp(ttk.Frame):
     def _init_state(self):
         self.state = {
             'zoomin_params': {
-                'use_zoom_in': tk.BooleanVar(value=True),
-                'fixed_crop': tk.BooleanVar(value=True),
-                'skip_clicks': tk.IntVar(value=-1),
-                'target_size': tk.IntVar(value=min(400, self.limit_longest_size)),
-                'expansion_ratio': tk.DoubleVar(value=1.4)
+                'use_zoom_in': QVariant(True),
+                'fixed_crop': QVariant(True),
+                'skip_clicks': QVariant(-1),
+                'target_size': QVariant(min(400, self.limit_longest_size)),
+                'expansion_ratio': QVariant(1.4)
             },
 
             'predictor_params': {
-                'net_clicks_limit': tk.IntVar(value=8)
+                'net_clicks_limit': QVariant(8)
             },
-            'brs_mode': tk.StringVar(value='NoBRS'),
-            'prob_thresh': tk.DoubleVar(value=0.5),
-            'lbfgs_max_iters': tk.IntVar(value=20),
+            'brs_mode': QVariant('NoBRS'),
+            'prob_thresh': QVariant(0.5),
+            'lbfgs_max_iters': QVariant(20),
 
-            'alpha_blend': tk.DoubleVar(value=0.5),
-            'click_radius': tk.IntVar(value=3),
+            'alpha_blend': QVariant(0.5),
+            'click_radius': QVariant(3),
         }
-
     def _add_menu(self):
         self.menubar = FocusLabelFrame(self, bd=1)
         self.menubar.pack(side=tk.TOP, fill='x')

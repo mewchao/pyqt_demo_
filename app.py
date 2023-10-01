@@ -7,13 +7,13 @@ import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QAction, QGraphicsView, QGraphicsScene, QSizePolicy, QFrame, QGraphicsPixmapItem, \
-    QPushButton, QHBoxLayout, QWidget, QVBoxLayout, QGroupBox
+from PyQt5.QtWidgets import QAction, QGraphicsPixmapItem, \
+    QPushButton, QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene
 
 from interactive_demo.controller import InteractiveController
-from interactive_demo.wrappers import FocusLabelFrame
 from isegm.inference import utils
 from isegm.utils import exp
+from PyQt5.QtWidgets import QAction
 
 
 class InteractiveDemoApp(QtWidgets.QMainWindow):
@@ -38,14 +38,14 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.load_mask_btn.clicked.connect(self._load_mask_callback)
         self.load_mask_btn.setEnabled(False)  # 设置按钮不可用
 
+        self.scene = QGraphicsScene()
+
         self._init_state()
         self._add_menu()
         self._add_window()
         self._add_canvas()
         self._add_buttons()
         self.show()
-        print("test")
-        # def _update_image(self, reset_canvas=False)方法添加的
         self.image_item = QGraphicsPixmapItem()
         # self.canvas_scene.addItem(self.image_item)
 
@@ -128,6 +128,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.canvas_frame_layout.setContentsMargins(5, 5, 5, 5)
 
         self.canvas = QtWidgets.QGraphicsView(self)
+
         # 取消禁用了滚动
         self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -189,7 +190,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         # ZoomIn Options
         self.zoomin_options_frame = QtWidgets.QGroupBox("ZoomIn options", self.control_frame)
         self.zoomin_options_frame.setFixedSize(375, 200)
-        self.zoomin_options_frame.setGeometry(10, 20+175+35, 375, 175)
+        self.zoomin_options_frame.setGeometry(10, 20 + 175 + 35, 375, 175)
 
         # 在布局的第二个索引插入 zoomin_options_frame
         horizontal_layout_V.insertWidget(1, self.zoomin_options_frame)
@@ -225,7 +226,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # Predictions Threshold
         self.prob_thresh_frame = QtWidgets.QGroupBox("Predictions threshold", self.control_frame)
-        self.prob_thresh_frame.setGeometry(10, 460+110, 375, 100)
+        self.prob_thresh_frame.setGeometry(10, 460 + 110, 375, 100)
 
         self.prob_thresh_slider = QtWidgets.QSlider(Qt.Horizontal, self.prob_thresh_frame)
         self.prob_thresh_slider.setGeometry(10, 30, 350, 30)
@@ -235,7 +236,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # Alpha Blending Coefficient
         self.alpha_blend_frame = QtWidgets.QGroupBox("Alpha blending coefficient", self.control_frame)
-        self.alpha_blend_frame.setGeometry(10, 460+110+110, 375, 100)
+        self.alpha_blend_frame.setGeometry(10, 460 + 110 + 110, 375, 100)
 
         self.alpha_blend_slider = QtWidgets.QSlider(Qt.Horizontal, self.alpha_blend_frame)
         self.alpha_blend_slider.setGeometry(10, 30, 350, 30)
@@ -245,7 +246,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # Visualisation Click Radius
         self.click_radius_frame = QtWidgets.QGroupBox("Visualisation click radius", self.control_frame)
-        self.click_radius_frame.setGeometry(10, 460+110+110+110, 375, 100)
+        self.click_radius_frame.setGeometry(10, 460 + 110 + 110 + 110, 375, 100)
 
         self.click_radius_slider = QtWidgets.QSlider(Qt.Horizontal, self.click_radius_frame)
         self.click_radius_slider.setGeometry(10, 30, 350, 30)
@@ -254,19 +255,19 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         # self.click_radius_slider.valueChanged.connect(self._update_click_radius)
 
     def _load_image_callback(self):
-        # 打开一个文件对话框，允许用户选择图像文件。用户可以在文件对话框中浏览文件系统，
-        # 并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。选择的文件名存储在变量filename中
+        # 打开一个文件对话框，允许用户选择图像文件。用户可以在文件对话框中浏览文件系统，并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。选择的文件名存储在变量filename中
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose an image", "",
                                                             "Images (*.jpg *.jpeg *.png *.bmp *.tiff);;All files (*)")
 
-        if filename:
+        if len(filename)>0:
             # 通过OpenCV（cv2）库加载图像文件并将其转换为RGB颜色空间。加载的图像存储在变量image中
             image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
-            # 将新的图像设置为应用程序中的当前图像
+            # 将新的图像设置为应用程序中的当前图像  self.image = image
             self.controller.set_image(image)
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_btn.setEnabled(True)
             self.load_mask_btn.setEnabled(True)
+
             self._update_image()
 
     def _save_mask_callback(self):
@@ -302,19 +303,51 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
         # 这个方法用于将新的图像更新到应用程序的图像视图
-        def _update_image(self, reset_canvas=False):
-            image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
-                                                      click_radius=self.state['click_radius'].get())
-            if image is not None:
-                q_image = QImage(image.data, image.shape[1], image.shape[0], image.shape[1] * 3, QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(q_image)
-                self.image_item.setPixmap(pixmap)
+        image = self.controller.get_visualization(
+            alpha_blend=self.state['alpha_blend'],
+            click_radius=self.state['click_radius']
+        )
+        if image is not None:
 
-            self._set_click_dependent_widgets_state()
+            height, width, channel = image.shape
+            bytes_per_line = 3 * width
+
+            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(q_image)
+
+            # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
+            self.scene = QGraphicsScene()
+            self.canvas.setScene(self.scene)
+
+            # 添加self.image_item到场景中
+            self.scene.addItem(self.image_item)
+
+            # 假设你有一个名为pixmap的QPixmap对象
+            target_size = 1000  # 目标尺寸
+
+            # 获取当前图像的宽度和高度
+            current_width = pixmap.width()
+            current_height = pixmap.height()
+
+            # 计算等比例缩放后的新尺寸
+            if current_width > current_height:
+                new_width = target_size
+                new_height = int(current_height * (target_size / current_width))
+            else:
+                new_height = target_size
+                new_width = int(current_width * (target_size / current_height))
+
+            # 使用scaled方法进行等比例缩放
+            pixmap = pixmap.scaled(new_width, new_height)
+
+            # 设置图像到self.image_item上
+            self.image_item.setPixmap(pixmap)
+
+        # self._set_click_dependent_widgets_state()
 
     def _set_click_dependent_widgets_state(self):
-        after_1st_click_state = QtWidgets.QPushButton.Enabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.Disabled
-        before_1st_click_state = QtWidgets.QPushButton.Disabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.Enabled
+        after_1st_click_state = QtWidgets.QPushButton.Enabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.isEnabled
+        before_1st_click_state = QtWidgets.QPushButton.Disabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.isEnabled
 
         self.finish_object_button.setEnabled(after_1st_click_state)
         self.undo_click_button.setEnabled(after_1st_click_state)
