@@ -21,6 +21,7 @@ class InteractiveController:
         self.image = None
         self.predictor = None
         self.device = device
+        # 将一个函数或方法的引用存储在类的属性中，
         self.update_image_callback = update_image_callback
         self.predictor_params = predictor_params
         self.reset_predictor()
@@ -32,6 +33,7 @@ class InteractiveController:
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
         # 对象计数器初始化为零，用于跟踪当前识别的对象数量
         self.object_count = 0
+        # 清除之前的交互状态，以准备开始下一个对象的交互
         self.reset_last_object(update_image=False)
         # 可能用于更新图像显示
         self.update_image_callback(reset_canvas=True)
@@ -103,11 +105,16 @@ class InteractiveController:
         self.object_count += 1
         self.reset_last_object()
 
+    # 用于重置应用程序中与上一个对象交互相关的状态和数据，是在每次与对象的交互结束后，清除之前的交互状态，以准备开始下一个对象的交互
     def reset_last_object(self, update_image=True):
+        # 存储交互状态和概率历史的数据结构  设置为空列表来清空之前的数据
         self.states = []
         self.probs_history = []
+        # 除与点击相关的数据
         self.clicker.reset_clicks()
+        # 重置与预测器相关的状态
         self.reset_predictor()
+        # 重置初始遮罩
         self.reset_init_mask()
         if update_image:
             self.update_image_callback()

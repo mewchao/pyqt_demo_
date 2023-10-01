@@ -189,6 +189,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_btn.setEnabled(True)
             self.load_mask_btn.setEnabled(True)
+            self._update_image()
 
     def _save_mask_callback(self):
         mask = self.controller.result_mask
@@ -222,23 +223,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
-        # # 生成可视化  alpha_blend  click_radius参数从self.state中获取的
-        # image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'],
-        #                                           click_radius=self.state['click_radius'])
-        # if self.image_on_canvas is None:
-        #     self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
-        #     self.image_on_canvas.register_click_callback(self._click_callback)
-        #
-        # self._set_click_dependent_widgets_state()
-        # # 如果生成的图像不为None，则将图像转换为QImage对象，以便在PyQt中进行处理。然后，创建一个QPixmap对象，将QImage转换为QPixmap，
-        # # 并将其设置为画布（self.canvas）的图像。这将在界面上显示生成的可视化内容。
-        # if image is not None:
-        #     height, width, channel = image.shape
-        #     bytes_per_line = 3 * width
-        #     q_image = QtGui.QImage(image.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
-        #     pixmap = QtGui.QPixmap.fromImage(q_image)
-        #     self.canvas.setPixmap(pixmap)
-
         # 这个方法用于将新的图像更新到应用程序的图像视图
         def _update_image(self, reset_canvas=False):
             image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
