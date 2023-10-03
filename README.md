@@ -8,11 +8,14 @@ pyqt_demo_
 |---assets # 编译配置
 |
 |---inetracrive_demo #  
-| |---canvas.py 
+| |---canvas.py #   Display and zoom image  还有很多要改。。。
 | |---controller.py 
 | |---wrappers.py 
 |
 |---isegm
+| |---inference
+|   |---clicker.py # 点击类Clicker
+|
 |
 |---models
 |

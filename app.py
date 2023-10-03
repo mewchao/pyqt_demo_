@@ -3,12 +3,15 @@ import argparse
 import cv2
 import numpy as np
 import torch
+from PIL import Image
+from PIL.ImageQt import ImageQt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem, \
-    QPushButton, QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene
+    QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
 
+from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
 from isegm.utils import exp
 from PyQt5.QtWidgets import QAction
@@ -22,20 +25,20 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
 
+        # 把更新图像的方法也传入构造函数
         self.controller = InteractiveController(model, args.device,
                                                 predictor_params={'brs_mode': 'NoBRS'},
                                                 update_image_callback=self._update_image)
 
         self.scene = QGraphicsScene()
-
         self._init_state()
         self._add_menu()
         self._add_window()
         self._add_canvas()
         self._add_buttons()
         self.show()
+        print("self.show()")
         self.image_item = QGraphicsPixmapItem()
-        # self.canvas_scene.addItem(self.image_item)
 
     # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
     # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
@@ -255,7 +258,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_action.setEnabled(True)
             self.load_mask_action.setEnabled(True)
-            
             self._update_image()
 
     def _save_mask_callback(self):
@@ -290,48 +292,64 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
-        # 这个方法用于将新的图像更新到应用程序的图像视图
+        # 这个方法用于将新的图像更新到应用程序的图像视图，根据control中的self.image生成可视化image
         image = self.controller.get_visualization(
             alpha_blend=self.state['alpha_blend'],
             click_radius=self.state['click_radius']
         )
         if image is not None:
-
             height, width, channel = image.shape
             bytes_per_line = 3 * width
-
             q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(q_image)
 
             # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
             self.scene = QGraphicsScene()
             self.canvas.setScene(self.scene)
-
             # 添加self.image_item到场景中
             self.scene.addItem(self.image_item)
 
-            # 假设你有一个名为pixmap的QPixmap对象
-            target_size = 1000  # 目标尺寸
-
-            # 获取当前图像的宽度和高度
+            # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放
+            target_size = 1000
             current_width = pixmap.width()
             current_height = pixmap.height()
-
-            # 计算等比例缩放后的新尺寸
             if current_width > current_height:
                 new_width = target_size
                 new_height = int(current_height * (target_size / current_width))
             else:
                 new_height = target_size
                 new_width = int(current_width * (target_size / current_height))
-
-            # 使用scaled方法进行等比例缩放
             pixmap = pixmap.scaled(new_width, new_height)
 
             # 设置图像到self.image_item上
             self.image_item.setPixmap(pixmap)
+            print("self.image_item.setPixmap(pixmap)")
 
-        # self._set_click_dependent_widgets_state()
+            if self.image_on_canvas is None:
+                # self.canvas_frame = QtWidgets.QGroupBox("Image", self)
+                # self.canvas = QtWidgets.QGraphicsView(self)
+                # 这里的构造需要重新弄
+                self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
+                print("self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)")
+                self.image_on_canvas.register_click_callback(self._click_callback)
+                print("self.image_on_canvas.register_click_callback(self._click_callback)")
+
+            # self._set_click_dependent_widgets_state()
+            if image is not None:
+                self.image_on_canvas.reload_image(ImageQt.Image.fromImage(self._convert_image(image)), reset_canvas)
+
+
+    def _click_callback(self, is_positive, x, y):
+        # 使self.canvas获取焦点  "获取焦点" 是指用户界面中的某个可交互的元素（通常是输入框、按钮、小部件等）成为用户当前操作的目标
+        self.canvas.setFocus()
+
+        if self.image_on_canvas is None:
+            QMessageBox.warning(self, "Warning", "Please load an image first")
+            return
+
+        if self._check_entry(self):
+            self.controller.add_click(x, y, is_positive)
+            print("self.controller.add_click(x, y, is_positive)")
 
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = QtWidgets.QPushButton.Enabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.isEnabled
@@ -345,7 +363,102 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.net_clicks_entry.setEnabled(False)
             self.lbfgs_iters_entry.setEnabled(False)
 
-    # Rest of the callback methods can be added similarly
+    def _reset_last_object(self):
+        self.state['alpha_blend'].set(0.5)
+        self.state['prob_thresh'].set(0.5)
+        self.controller.reset_last_object()
+
+    def _update_prob_thresh(self, value):
+        if self.controller.is_incomplete_mask:
+            self.controller.prob_thresh = self.state['prob_thresh'].get()
+            self._update_image()
+
+    def _update_blend_alpha(self, value):
+        self._update_image()
+
+    def _update_click_radius(self, *args):
+        if self.image_on_canvas is None:
+            return
+
+        self._update_image()
+
+    # 当用户选择"NoBRS"模式时，文本框net_clicks_entry和lbfgs_iters_entry会被禁用，同时它们的标签也会被禁用。
+    # 当用户选"BRS"模式时，如果net_clicks_entry中的文本是"INF"，它会被设置为"8"，然后这些文本框和标签会被启用。最后，调用reset_predictor方法以重置预测器的状态。
+    def change_brs_mode(self):
+        selected_mode = self.brs_mode_combobox.currentText()
+
+        if selected_mode == 'NoBRS':
+            self.net_clicks_entry.setText('INF')
+            self.net_clicks_entry.setDisabled(True)
+            self.net_clicks_label.setDisabled(True)
+            self.lbfgs_iters_entry.setDisabled(True)
+            self.lbfgs_iters_label.setDisabled(True)
+        else:
+            if self.net_clicks_entry.text() == 'INF':
+                self.net_clicks_entry.setText('8')
+            self.net_clicks_entry.setEnabled(True)
+            self.net_clicks_label.setEnabled(True)
+            self.lbfgs_iters_entry.setEnabled(True)
+            self.lbfgs_iters_label.setEnabled(True)
+
+        self.reset_predictor()  # 重置预测器的状态
+
+    def _reset_predictor(self, *args, **kwargs):
+        brs_mode = self.state['brs_mode'].get()
+        prob_thresh = self.state['prob_thresh'].get()
+        net_clicks_limit = None if brs_mode == 'NoBRS' else self.state['predictor_params']['net_clicks_limit'].get()
+
+        if self.state['zoomin_params']['use_zoom_in'].get():
+            zoomin_params = {
+                'skip_clicks': self.state['zoomin_params']['skip_clicks'].get(),
+                'target_size': self.state['zoomin_params']['target_size'].get(),
+                'expansion_ratio': self.state['zoomin_params']['expansion_ratio'].get()
+            }
+            if self.state['zoomin_params']['fixed_crop'].get():
+                zoomin_params['target_size'] = (zoomin_params['target_size'], zoomin_params['target_size'])
+        else:
+            zoomin_params = None
+
+        predictor_params = {
+            'brs_mode': brs_mode,
+            'prob_thresh': prob_thresh,
+            'zoom_in_params': zoomin_params,
+            'predictor_params': {
+                'net_clicks_limit': net_clicks_limit,
+                'max_size': self.limit_longest_size
+            },
+            'brs_opt_func_params': {'min_iou_diff': 1e-3},
+            'lbfgs_params': {'maxfun': self.state['lbfgs_max_iters'].get()}
+        }
+        self.controller.reset_predictor(predictor_params)
+
+    def set_click_dependent_widgets_state(self):
+        after_1st_click_state = Qt.Normal if self.controller.is_incomplete_mask else Qt.Disabled
+        before_1st_click_state = Qt.Disabled if self.controller.is_incomplete_mask else Qt.Normal
+
+        self.finish_object_button.setEnabled(after_1st_click_state)
+        self.undo_click_button.setEnabled(after_1st_click_state)
+        self.reset_clicks_button.setEnabled(after_1st_click_state)
+        self.zoomin_options_frame.setEnabled(before_1st_click_state)
+        self.brs_options_frame.setEnabled(before_1st_click_state)
+
+        if self.state['brs_mode'] == 'NoBRS':
+            self.net_clicks_entry.setEnabled(False)
+            self.net_clicks_label.setEnabled(False)
+            self.lbfgs_iters_entry.setEnabled(False)
+            self.lbfgs_iters_label.setEnabled(False)
+
+    # 递归函数，用于检查窗口中的所有子组件（widget）以确保它们都通过某种条件检查。
+    def _check_entry(self, widget):
+        all_checked = True
+        if widget.winfo_children is not None:
+            for w in widget.winfo_children():
+                all_checked = all_checked and self._check_entry(w)
+
+        if getattr(widget, "_check_bounds", None) is not None:
+            all_checked = all_checked and widget._check_bounds(widget.get(), '-1')
+
+        return all_checked
 
 
 def parse_args():

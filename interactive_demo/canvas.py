@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
-""" Adopted from https://github.com/foobar167/junkyard/blob/master/manual_image_annotation1/polygon/gui_canvas.py """
 import os
 import sys
 import time
 import math
-import tkinter as tk
-
-from tkinter import ttk
 from PIL import Image, ImageTk
+from PyQt5.QtWidgets import QScrollBar
 
 
 def handle_exception(exit_code=0):
@@ -26,29 +22,29 @@ def handle_exception(exit_code=0):
 
     return wrapper
 
+# 根据滚动范围的大小来自动隐藏或显示滚动条，以提供更好的用户体验。这在某些情况下可以防止不必要的滚动条显示。
+class AutoScrollBar(QScrollBar):
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self.hide_if_not_needed()
 
-class AutoScrollbar(ttk.Scrollbar):
-    """ A scrollbar that hides itself if it's not needed. Works only for grid geometry manager """
-
-    def set(self, lo, hi):
-        if float(lo) <= 0.0 and float(hi) >= 1.0:
-            self.grid_remove()
+    def hide_if_not_needed(self):
+        lo = self.minimum()
+        hi = self.maximum()
+        if lo <= 0.0 and hi >= 1.0:
+            self.setVisible(False)
         else:
-            self.grid()
-            ttk.Scrollbar.set(self, lo, hi)
+            self.setVisible(True)
 
-    @handle_exception(1)
-    def pack(self, **kw):
-        raise tk.TclError('Cannot use pack with the widget ' + self.__class__.__name__)
-
-    @handle_exception(1)
-    def place(self, **kw):
-        raise tk.TclError('Cannot use place with the widget ' + self.__class__.__name__)
+    def setRange(self, min_val, max_val):
+        if min_val != max_val:
+            super().setRange(min_val, max_val)
+        else:
+            raise ValueError("Cannot set a range with min_val equal to max_val")
+        self.hide_if_not_needed()
 
 
 class CanvasImage:
-    """ Display and zoom image """
-
     def __init__(self, canvas_frame, canvas):
         """ Initialize the ImageFrame """
         self.current_scale = 1.0  # scale for the canvas image zoom, public for outer classes
@@ -57,8 +53,8 @@ class CanvasImage:
         # Create ImageFrame in placeholder widget
         self.__imframe = canvas_frame
         # Vertical and horizontal scrollbars for canvas
-        self.hbar = AutoScrollbar(canvas_frame, orient='horizontal')
-        self.vbar = AutoScrollbar(canvas_frame, orient='vertical')
+        self.hbar = AutoScrollBar(canvas_frame, orient='horizontal')
+        self.vbar = AutoScrollBar(canvas_frame, orient='vertical')
         self.hbar.grid(row=1, column=0, sticky='we')
         self.vbar.grid(row=0, column=1, sticky='ns')
         # Add scroll bars to canvas
@@ -106,7 +102,7 @@ class CanvasImage:
             self._reset_canvas_offset()
 
         self.__show_image()  # show image on the canvas
-        self.canvas.focus_set()  # set focus on the canvas
+        self.canvas.setFocus()  # 设置焦点到画布
 
     def grid(self, **kw):
         """ Put CanvasImage widget on the parent widget """

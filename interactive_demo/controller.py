@@ -15,7 +15,9 @@ class InteractiveController:
         self.states = []
         self.probs_history = []
         self.object_count = 0
+        # 存储最终的分割掩码的NumPy数组  数据类型np.uint16
         self._result_mask = None
+        # 存储分割掩码（segmentationmask）的初始值的NumPy数组。 数据类型np.float32
         self._init_mask = None
         # 当前图像
         self.image = None
@@ -29,7 +31,7 @@ class InteractiveController:
     # 将新的图像设置为应用程序中的当前图像，并进行一些初始化工作，以便应用程序可以开始处理和显示新图像
     def set_image(self, image):
         self.image = image
-        # 创建一个与输入图像相同大小的全零掩码
+        # 创建一个与输入图像相同大小的全零掩码 在构造函数中，它被初始化为一个全零的数组
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
         # 对象计数器初始化为零，用于跟踪当前识别的对象数量
         self.object_count = 0
@@ -46,23 +48,33 @@ class InteractiveController:
 
         self._init_mask = mask.astype(np.float32)
         self.probs_history.append((np.zeros_like(self._init_mask), self._init_mask))
+        #  _init_mask 转化为 PyTorch 张量
         self._init_mask = torch.tensor(self._init_mask, device=self.device).unsqueeze(0).unsqueeze(0)
         self.clicker.click_indx_offset = 1
 
+    # 处理用户在图像上的点击操作，用于进行交互式图像分割。
     def add_click(self, x, y, is_positive):
+        # 将当前的状态保存到self.states列表中。这个状态包括点击器（clicker）和预测器（predictor）的当前状态
         self.states.append({
             'clicker': self.clicker.get_state(),
             'predictor': self.predictor.get_states()
         })
 
+        # 创建一个clicker.Click对象，表示用户的点击操作。is_positive参数表示点击是否是正面（positive）,coords 参数表示点击的坐标位置(x, y)
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
+
+        # 将用户的点击操作添加到点击器（clicker）中
         self.clicker.add_click(click)
-        pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
+
+        # 获取预测结果。预测的结果存储在pred变量中。预测器（predictor）根据用户的点击和初始掩码（self._init_mask）来生成预测
         if self._init_mask is not None and len(self.clicker) == 1:
+            # 这段代码的作用是将用户的点击操作以及先前的分割结果传递给分割模型，以获取最终的图像分割预测结果。这对于交互式图像分割应用程序非常重要，因为用户可以不断添加点击以改进分割结果
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
 
+        # 清空CUDA内存缓存，以释放GPU内存。这通常用于优化内存使用，确保程序在GPU上运行时不会耗尽内存。
         torch.cuda.empty_cache()
 
+        # 将当前的预测结果pred附加到self.probs_history列表中。如果self.probs_history已经存在，则将新的预测结果与上一个结果一起添加，否则创建一个新的列表并添加当前预测结果
         if self.probs_history:
             self.probs_history.append((self.probs_history[-1][0], pred))
         else:
