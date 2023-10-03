@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 import cv2
 import numpy as np
@@ -7,11 +6,10 @@ import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QAction, QGraphicsPixmapItem, \
+from PyQt5.QtWidgets import QGraphicsPixmapItem, \
     QPushButton, QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene
 
 from interactive_demo.controller import InteractiveController
-from isegm.inference import utils
 from isegm.utils import exp
 from PyQt5.QtWidgets import QAction
 
@@ -259,7 +257,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose an image", "",
                                                             "Images (*.jpg *.jpeg *.png *.bmp *.tiff);;All files (*)")
 
-        if len(filename)>0:
+        if len(filename) > 0:
             # 通过OpenCV（cv2）库加载图像文件并将其转换为RGB颜色空间。加载的图像存储在变量image中
             image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
             # 将新的图像设置为应用程序中的当前图像  self.image = image
@@ -389,13 +387,3 @@ def parse_args():
     cfg = exp.load_config_file(args.cfg, return_edict=True)
 
     return args, cfg
-
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    args, cfg = parse_args()
-    checkpoint_path = utils.find_checkpoint(cfg.INTERACTIVE_MODELS_PATH, args.checkpoint)
-    model = utils.load_is_model(checkpoint_path, args.device, cpu_dist_maps=True)
-    window = InteractiveDemoApp(args, model)
-    window.show()
-    sys.exit(app.exec_())
