@@ -7,6 +7,7 @@ from app import InteractiveDemoApp
 from isegm.inference import utils
 from isegm.utils import exp
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -36,6 +37,7 @@ def parse_args():
     cfg = exp.load_config_file(args.cfg, return_edict=True)
 
     return args, cfg
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

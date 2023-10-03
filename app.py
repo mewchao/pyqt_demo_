@@ -26,16 +26,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
                                                 predictor_params={'brs_mode': 'NoBRS'},
                                                 update_image_callback=self._update_image)
 
-        # 创建保存遮罩按钮
-        self.save_mask_btn = QPushButton('Save mask', self)
-        self.save_mask_btn.clicked.connect(self._save_mask_callback)
-        self.save_mask_btn.setEnabled(False)  # 设置按钮不可用
-
-        # 创建加载遮罩按钮
-        self.load_mask_btn = QPushButton('Load mask', self)
-        self.load_mask_btn.clicked.connect(self._load_mask_callback)
-        self.load_mask_btn.setEnabled(False)  # 设置按钮不可用
-
         self.scene = QGraphicsScene()
 
         self._init_state()
@@ -84,19 +74,19 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         # 需要根据具体的需求来实现按钮的点击事件处理方法
         menubar = self.menuBar()
 
-        load_image_action = QAction('Load image', self)
-        load_image_action.triggered.connect(self._load_image_callback)
-        menubar.addAction(load_image_action)
+        self.load_image_action = QAction('Load image', self)
+        self.load_image_action.triggered.connect(self._load_image_callback)
+        menubar.addAction(self.load_image_action)
 
-        save_mask_action = QAction('Save mask', self)
-        save_mask_action.triggered.connect(self._save_mask_callback)
-        save_mask_action.setEnabled(False)  # Disable initially
-        menubar.addAction(save_mask_action)
+        self.save_mask_action = QAction('Save mask', self)
+        self.save_mask_action.triggered.connect(self._save_mask_callback)
+        self.save_mask_action.setEnabled(False)  # Disable initially
+        menubar.addAction(self.save_mask_action)
 
-        load_mask_action = QAction('Load mask', self)
-        load_mask_action.triggered.connect(self._load_mask_callback)
-        load_mask_action.setEnabled(False)  # Disable initially
-        menubar.addAction(load_mask_action)
+        self.load_mask_action = QAction('Load mask', self)
+        self.load_mask_action.triggered.connect(self._load_mask_callback)
+        self.load_mask_action.setEnabled(False)  # Disable initially
+        menubar.addAction(self.load_mask_action)
 
         about_action = QAction('About', self)
         about_action.triggered.connect(self._about_callback)
@@ -263,9 +253,9 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             # 将新的图像设置为应用程序中的当前图像  self.image = image
             self.controller.set_image(image)
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
-            self.save_mask_btn.setEnabled(True)
-            self.load_mask_btn.setEnabled(True)
-
+            self.save_mask_action.setEnabled(True)
+            self.load_mask_action.setEnabled(True)
+            
             self._update_image()
 
     def _save_mask_callback(self):
