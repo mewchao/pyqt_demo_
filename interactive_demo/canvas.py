@@ -1,11 +1,12 @@
+import math
 import os
 import sys
 import time
-import math
+
 from PIL import Image, ImageTk
-from PyQt5.QtCore import Qt, QEvent, QRectF
+from PyQt5.QtCore import Qt, QEvent, QRectF, QObject
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QWidget, QMainWindow, QVBoxLayout, QGraphicsScene
+from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QMainWindow, QGraphicsScene
 
 
 def handle_exception(exit_code=0):
@@ -46,6 +47,39 @@ class AutoScrollBar(QScrollBar):
         self.hide_if_not_needed()
 
 
+class MyEventFilter(QObject):
+    # eventFilter方法在PyQt中用于事件过滤
+    # obj参数表示安装了事件过滤器的QObject对象，即接收事件的对象
+    def eventFilter(self, obj, event):
+        print(event.type())
+        # 处理窗口大小改变事件
+        if event.type() == QEvent.Resize:
+            obj.__size_changed(event)
+        # 鼠标按钮按下事件
+        elif event.type() == QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton:
+                obj.__left_mouse_button(event)
+            elif event.button() == Qt.RightButton:
+                obj.__right_mouse_button_pressed(event)
+            elif event.button() == Qt.MiddleButton:
+                obj.__right_mouse_button_pressed(event)
+        # 鼠标按钮释放事件
+        elif event.type() == QEvent.MouseButtonRelease:
+            if event.button() == Qt.RightButton:
+                obj.__right_mouse_button_released(event)
+            elif event.button() == Qt.MiddleButton:
+                obj.__right_mouse_button_released(event)
+        # 鼠标移动事件
+        elif event.type() == QEvent.MouseMove:
+            if event.buttons() == Qt.RightButton:
+                obj.__right_mouse_button_motion(event)
+            elif event.buttons() == Qt.MiddleButton:
+                obj.__right_mouse_button_motion(event)
+        # 鼠标滚轮事件
+        elif event.type() == QEvent.Wheel:
+            obj.__wheel(event)
+        return super().eventFilter(obj, event)
+
 class CanvasImage(QMainWindow):
     def __init__(self, canvas_frame, canvas):
         super().__init__()
@@ -68,73 +102,49 @@ class CanvasImage(QMainWindow):
         self.hbar.valueChanged.connect(self.__scroll_x)
         self.vbar.valueChanged.connect(self.__scroll_y)
 
-        self.canvas.viewport().installEventFilter(self)
+        # 绑定事件处理函数 将事件过滤器安装到Canvas上
+        self.canvas.installEventFilter(self)
 
         self.container = None
         self._click_callback = None
-
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.Resize:
-            self.__size_changed(event)
-        elif event.type() == QEvent.MouseButtonPress:
-            if event.button() == Qt.LeftButton:
-                self.__left_mouse_button(event)
-            elif event.button() == Qt.RightButton:
-                self.__right_mouse_button_pressed(event)
-            elif event.button() == Qt.MiddleButton:
-                self.__right_mouse_button_pressed(event)
-        elif event.type() == QEvent.MouseButtonRelease:
-            if event.button() == Qt.RightButton:
-                self.__right_mouse_button_released(event)
-            elif event.button() == Qt.MiddleButton:
-                self.__right_mouse_button_released(event)
-        elif event.type() == QEvent.MouseMove:
-            if event.buttons() == Qt.RightButton:
-                self.__right_mouse_button_motion(event)
-            elif event.buttons() == Qt.MiddleButton:
-                self.__right_mouse_button_motion(event)
-        elif event.type() == QEvent.Wheel:
-            self.__wheel(event)
-
-        return super().eventFilter(obj, event)
 
     def register_click_callback(self,  click_callback):
         self._click_callback = click_callback
 
     def reload_image(self, image, reset_canvas=True):
-        # Convert QPixmap to QImage
-        q_image = image.toImage()
+        # q_image = image.toImage()
+        # image = Image.fromqimage(q_image)
+        #
+        # self.__original_image = image.copy()
+        # self.__current_image = image.copy()
+        # self.__original_image = image.copy()
+        # self.__current_image = image.copy()
+        #
+        # if reset_canvas:
+        #     self.imwidth, self.imheight = self.__original_image.size
+        #     self.__min_side = min(self.imwidth, self.imheight)
+        #
+        #     scale = min(self.canvas.viewport().width() / self.imwidth, self.canvas.viewport().height() / self.imheight)
+        #
+        #     if self.container:
+        #         self.scene.removeItem(self.container)
+        #
+        #     # 修改后的代码
+        #     scaled_width = int(round(self.imwidth * scale))
+        #     scaled_height = int(round(self.imheight * scale))
+        #     scaled_pixmap = QPixmap.fromImage(q_image).scaled(
+        #         scaled_width, scaled_height,
+        #         Qt.KeepAspectRatio, Qt.SmoothTransformation
+        #     )
+        #
+        #     self.container = self.scene.addPixmap(scaled_pixmap)
+        #     self.current_scale = scale
+        #     self._reset_canvas_offset()
 
-        # Convert QImage to PIL Image
-        image = Image.fromqimage(q_image)
-
-        self.__original_image = image.copy()
-        self.__current_image = image.copy()
-        self.__original_image = image.copy()
-        self.__current_image = image.copy()
-
-        if reset_canvas:
-            self.imwidth, self.imheight = self.__original_image.size
-            self.__min_side = min(self.imwidth, self.imheight)
-
-            scale = min(self.canvas.viewport().width() / self.imwidth, self.canvas.viewport().height() / self.imheight)
-
-            if self.container:
-                self.scene.removeItem(self.container)
-
-            # 修改后的代码
-            scaled_width = int(round(self.imwidth * scale))
-            scaled_height = int(round(self.imheight * scale))
-            scaled_pixmap = QPixmap.fromImage(q_image).scaled(
-                scaled_width, scaled_height,
-                Qt.KeepAspectRatio, Qt.SmoothTransformation
-            )
-
-            self.container = self.scene.addPixmap(scaled_pixmap)
-            self.current_scale = scale
-            self._reset_canvas_offset()
-
-        self.canvas.setFocus()
+        # self.canvas.setFocus()
+        # 实例化了MyEventFilter类，并将其安装到Canvas对象上
+        event_filter = MyEventFilter()
+        image.installEventFilter(event_filter)
 
     def grid(self, **kw):
         """ Put CanvasImage widget on the parent widget """

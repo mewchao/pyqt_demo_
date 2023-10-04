@@ -3,18 +3,16 @@ import argparse
 import cv2
 import numpy as np
 import torch
-from PIL import Image
-from PIL.ImageQt import ImageQt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QGraphicsPixmapItem, \
     QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
 from isegm.utils import exp
-from PyQt5.QtWidgets import QAction
 
 
 class InteractiveDemoApp(QtWidgets.QMainWindow):
@@ -75,29 +73,29 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     # 创建应用程序的菜单栏，并向菜单栏添加一些按钮。以下是该方法的主要功能：
     def _add_menu(self):
         # 需要根据具体的需求来实现按钮的点击事件处理方法
-        menubar = self.menuBar()
+        self.menubar = self.menuBar()
 
         self.load_image_action = QAction('Load image', self)
         self.load_image_action.triggered.connect(self._load_image_callback)
-        menubar.addAction(self.load_image_action)
+        self.menubar.addAction(self.load_image_action)
 
         self.save_mask_action = QAction('Save mask', self)
         self.save_mask_action.triggered.connect(self._save_mask_callback)
         self.save_mask_action.setEnabled(False)  # Disable initially
-        menubar.addAction(self.save_mask_action)
+        self.menubar.addAction(self.save_mask_action)
 
         self.load_mask_action = QAction('Load mask', self)
         self.load_mask_action.triggered.connect(self._load_mask_callback)
         self.load_mask_action.setEnabled(False)  # Disable initially
-        menubar.addAction(self.load_mask_action)
+        self.menubar.addAction(self.load_mask_action)
 
         about_action = QAction('About', self)
         about_action.triggered.connect(self._about_callback)
-        menubar.addAction(about_action)
+        self.menubar.addAction(about_action)
 
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self.close)
-        menubar.addAction(exit_action)
+        self.menubar.addAction(exit_action)
 
     # 这是整个窗口的布局
     def _add_window(self):
@@ -296,13 +294,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.state['prob_thresh'] = 0.5
         self.controller.reset_last_object()
 
-    # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
-    def _update_image(self, reset_canvas=False):
-        # 这个方法用于将新的图像更新到应用程序的图像视图，根据control中的self.image生成可视化image
-        image = self.controller.get_visualization(
-            alpha_blend=self.state['alpha_blend'],
-            click_radius=self.state['click_radius']
-        )
+    def _show_image(self, image):
         if image is not None:
             height, width, channel = image.shape
             bytes_per_line = 3 * width
@@ -330,16 +322,24 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             # 设置图像到self.image_item上
             self.image_item.setPixmap(pixmap)
 
-            if self.image_on_canvas is None:
-                self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
-                self.image_on_canvas.register_click_callback(self._click_callback)
+    # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
+    def _update_image(self, reset_canvas=False):
+        # 这个方法用于将新的图像更新到应用程序的图像视图，根据control中的self.image生成可视化image
+        image = self.controller.get_visualization(
+            alpha_blend=self.state['alpha_blend'],
+            click_radius=self.state['click_radius']
+        )
+        self._show_image(image)
+        if self.image_on_canvas is None:
+            self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
+            self.image_on_canvas.register_click_callback(self._click_callback)
 
-            self._set_click_dependent_widgets_state()
+        self._set_click_dependent_widgets_state()
 
-            if image is not None:
-                self.image_on_canvas.reload_image(pixmap)
+        # if image is not None:
+        # self.image_on_canvas.reload_image(pixmap, reset_canvas=True)
 
-
+    # 当用户在图像上点击时，会触发_click_callback方法。
     def _click_callback(self, is_positive, x, y):
         # 使self.canvas获取焦点  "获取焦点" 是指用户界面中的某个可交互的元素（通常是输入框、按钮、小部件等）成为用户当前操作的目标
         self.canvas.setFocus()
@@ -349,14 +349,14 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             return
 
         if self._check_entry(self):
+            #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
             self.controller.add_click(x, y, is_positive)
-            print("self.controller.add_click(x, y, is_positive)")
 
     def _set_click_dependent_widgets_state(self):
 
         if self.controller.is_incomplete_mask:
             after_1st_click_state = True
-        else :
+        else:
             after_1st_click_state = False
 
         if self.controller.is_incomplete_mask:
