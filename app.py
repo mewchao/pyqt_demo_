@@ -209,11 +209,17 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.brs_mode_combo.setGeometry(10, 38, 100, 30)
         self.brs_mode_combo.addItems(self.brs_modes)
 
-        self.network_clicks_label = QtWidgets.QLabel("Network clicks", self.brs_options_frame)
-        self.network_clicks_label.setGeometry(130, 15, 100, 30)
+        self.network_clicks_label = QtWidgets.QLabel("Network\nclicks", self.brs_options_frame)
+        self.network_clicks_label.setGeometry(130, 10, 150, 45)
 
         self.network_clicks_spinbox = QtWidgets.QSpinBox(self.brs_options_frame)
-        self.network_clicks_spinbox.setGeometry(130, 38, 60, 30)
+        self.network_clicks_spinbox.setGeometry(130, 55, 60, 30)
+
+        self.lbfgs_iters_label = QtWidgets.QLabel("L-BFGS Max\nIterations", self.brs_options_frame)
+        self.lbfgs_iters_label.setGeometry(220, 10, 150, 45)
+
+        self.lbfgs_iters_spinbox = QtWidgets.QSpinBox(self.brs_options_frame)
+        self.lbfgs_iters_spinbox.setGeometry(220, 55, 60, 30)
 
         # Predictions Threshold
         self.prob_thresh_frame = QtWidgets.QGroupBox("Predictions threshold", self.control_frame)
@@ -323,20 +329,17 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
             # 设置图像到self.image_item上
             self.image_item.setPixmap(pixmap)
-            print("self.image_item.setPixmap(pixmap)")
 
             if self.image_on_canvas is None:
-                # self.canvas_frame = QtWidgets.QGroupBox("Image", self)
-                # self.canvas = QtWidgets.QGraphicsView(self)
-                # 这里的构造需要重新弄
                 self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
-                print("self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)")
                 self.image_on_canvas.register_click_callback(self._click_callback)
-                print("self.image_on_canvas.register_click_callback(self._click_callback)")
 
-            # self._set_click_dependent_widgets_state()
+            self._set_click_dependent_widgets_state()
+
             if image is not None:
-                self.image_on_canvas.reload_image(ImageQt.Image.fromImage(self._convert_image(image)), reset_canvas)
+
+                self.image_on_canvas.reload_image(pixmap, reset_canvas=True)
+                print("self.image_on_canvas.reload_image(ImageQt.Image.fromImage(self._convert_image(image)), reset_canvas)")
 
 
     def _click_callback(self, is_positive, x, y):
@@ -352,16 +355,28 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             print("self.controller.add_click(x, y, is_positive)")
 
     def _set_click_dependent_widgets_state(self):
-        after_1st_click_state = QtWidgets.QPushButton.Enabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.isEnabled
-        before_1st_click_state = QtWidgets.QPushButton.Disabled if self.controller.is_incomplete_mask else QtWidgets.QPushButton.isEnabled
+
+        if self.controller.is_incomplete_mask:
+            after_1st_click_state = True
+        else :
+            after_1st_click_state = False
+
+        if self.controller.is_incomplete_mask:
+            before_1st_click_state = True
+        else:
+            before_1st_click_state = False
 
         self.finish_object_button.setEnabled(after_1st_click_state)
         self.undo_click_button.setEnabled(after_1st_click_state)
         self.reset_clicks_button.setEnabled(after_1st_click_state)
+        self.zoomin_options_frame.setEnabled(before_1st_click_state)
+        self.brs_options_frame.setEnabled(before_1st_click_state)
 
         if self.state['brs_mode'] == 'NoBRS':
-            self.net_clicks_entry.setEnabled(False)
-            self.lbfgs_iters_entry.setEnabled(False)
+            self.network_clicks_label.setEnabled(False)
+            self.network_clicks_spinbox.setEnabled(False)
+            self.lbfgs_iters_label.setEnabled(False)
+            self.lbfgs_iters_spinbox.setEnabled(False)
 
     def _reset_last_object(self):
         self.state['alpha_blend'].set(0.5)

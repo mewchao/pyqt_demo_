@@ -3,7 +3,9 @@ import sys
 import time
 import math
 from PIL import Image, ImageTk
-from PyQt5.QtWidgets import QScrollBar
+from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QWidget, QMainWindow, QVBoxLayout, QGraphicsScene
 
 
 def handle_exception(exit_code=0):
@@ -44,43 +46,57 @@ class AutoScrollBar(QScrollBar):
         self.hide_if_not_needed()
 
 
-class CanvasImage:
+class CanvasImage(QMainWindow):
     def __init__(self, canvas_frame, canvas):
-        """ Initialize the ImageFrame """
-        self.current_scale = 1.0  # scale for the canvas image zoom, public for outer classes
-        self.__delta = 1.2  # zoom magnitude
-        self.__previous_state = 0  # previous state of the keyboard
-        # Create ImageFrame in placeholder widget
+        super().__init__()
+        self.current_scale = 1.0
+        self.__delta = 1.2
+        self.__previous_state = 0
         self.__imframe = canvas_frame
-        # Vertical and horizontal scrollbars for canvas
-        self.hbar = AutoScrollBar(canvas_frame, orient='horizontal')
-        self.vbar = AutoScrollBar(canvas_frame, orient='vertical')
-        self.hbar.grid(row=1, column=0, sticky='we')
-        self.vbar.grid(row=0, column=1, sticky='ns')
-        # Add scroll bars to canvas
-        self.canvas = canvas
-        self.canvas.configure(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set)
-        self.hbar.configure(command=self.__scroll_x)  # bind scrollbars to the canvas
-        self.vbar.configure(command=self.__scroll_y)
-        # Bind events to the Canvas
-        self.canvas.bind('<Configure>', lambda event: self.__size_changed())  # canvas is resized
-        self.canvas.bind('<Button-1>', self.__left_mouse_button)  # remember canvas position
-        self.canvas.bind('<ButtonPress-3>', self.__right_mouse_button_pressed)  # remember canvas position
-        self.canvas.bind('<ButtonPress-2>', self.__right_mouse_button_pressed)  # remember canvas position (MacOS)
-        self.canvas.bind('<ButtonRelease-3>', self.__right_mouse_button_released)  # remember canvas position
-        self.canvas.bind('<ButtonRelease-2>', self.__right_mouse_button_released)  # remember canvas position (MacOS)
-        self.canvas.bind('<B3-Motion>', self.__right_mouse_button_motion)  # move canvas to the new position
-        self.canvas.bind('<B2-Motion>', self.__right_mouse_button_motion)  # move canvas to the new position
-        self.canvas.bind('<MouseWheel>', self.__wheel)  # zoom for Windows and MacOS, but not Linux
-        self.canvas.bind('<Button-5>', self.__wheel)  # zoom for Linux, wheel scroll down
-        self.canvas.bind('<Button-4>', self.__wheel)  # zoom for Linux, wheel scroll up
-        
-        # Handle keystrokes in idle mode, because program slows down on a weak computers,
-        # when too many key stroke events in the same time
-        self.canvas.bind('<Key>', lambda event: self.canvas.after_idle(self.__keystroke, event))
-        self.container = None
 
+        self.scene = QGraphicsScene()
+        self.canvas = QGraphicsView(self.scene, canvas)
+        self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.hbar = AutoScrollBar(Qt.Horizontal, canvas_frame)
+        self.vbar = AutoScrollBar(Qt.Vertical, canvas_frame)
+
+        self.canvas.setHorizontalScrollBar(self.hbar)
+        self.canvas.setVerticalScrollBar(self.vbar)
+
+        self.hbar.valueChanged.connect(self.__scroll_x)
+        self.vbar.valueChanged.connect(self.__scroll_y)
+
+        self.canvas.viewport().installEventFilter(self)
+
+        self.container = None
         self._click_callback = None
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Resize:
+            self.__size_changed(event)
+        elif event.type() == QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton:
+                self.__left_mouse_button(event)
+            elif event.button() == Qt.RightButton:
+                self.__right_mouse_button_pressed(event)
+            elif event.button() == Qt.MiddleButton:
+                self.__right_mouse_button_pressed(event)
+        elif event.type() == QEvent.MouseButtonRelease:
+            if event.button() == Qt.RightButton:
+                self.__right_mouse_button_released(event)
+            elif event.button() == Qt.MiddleButton:
+                self.__right_mouse_button_released(event)
+        elif event.type() == QEvent.MouseMove:
+            if event.buttons() == Qt.RightButton:
+                self.__right_mouse_button_motion(event)
+            elif event.buttons() == Qt.MiddleButton:
+                self.__right_mouse_button_motion(event)
+        elif event.type() == QEvent.Wheel:
+            self.__wheel(event)
+
+        return super().eventFilter(obj, event)
 
     def register_click_callback(self,  click_callback):
         self._click_callback = click_callback
@@ -91,18 +107,21 @@ class CanvasImage:
 
         if reset_canvas:
             self.imwidth, self.imheight = self.__original_image.size
-            self.__min_side = min(self.imwidth, self.imheight)  # get the smaller image side
+            self.__min_side = min(self.imwidth, self.imheight)
 
-            scale = min(self.canvas.winfo_width() / self.imwidth, self.canvas.winfo_height() / self.imheight)
+            scale = min(self.canvas.viewport().width() / self.imwidth, self.canvas.viewport().height() / self.imheight)
+
             if self.container:
-                self.canvas.delete(self.container)
+                self.scene.removeItem(self.container)
 
-            self.container = self.canvas.create_rectangle((0, 0, scale * self.imwidth, scale * self.imheight), width=0)
+            scaled_pixmap = QPixmap.fromImage(self.__current_image.toqimage()).scaled(
+                self.imwidth * scale, self.imheight * scale, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+            self.container = self.scene.addPixmap(scaled_pixmap)
             self.current_scale = scale
             self._reset_canvas_offset()
 
-        self.__show_image()  # show image on the canvas
-        self.canvas.setFocus()  # 设置焦点到画布
+        self.canvas.setFocus()
 
     def grid(self, **kw):
         """ Put CanvasImage widget on the parent widget """
@@ -184,7 +203,7 @@ class CanvasImage:
 
         return x, y
 
-    # ================================================ Canvas Routines =================================================
+# ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
         self.canvas.configure(scrollregion=(0, 0, 5000, 5000))
         self.canvas.scan_mark(0, 0)
@@ -223,7 +242,7 @@ class CanvasImage:
             self._change_canvas_scale(new_scale)
         self.__show_image()
 
-    # ================================================ Mouse callbacks =================================================  
+    # ================================================ Mouse callbacks =================================================
     def __wheel(self, event):
         """ Zoom with mouse wheel """
         x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
@@ -239,7 +258,7 @@ class CanvasImage:
 
         self._change_canvas_scale(scale, x, y)
         self.__show_image()
-    
+
     def __left_mouse_button(self, event):
         if self._click_callback is None:
             return
