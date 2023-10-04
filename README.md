@@ -1,5 +1,5 @@
 # pyqt
-
+**目前主要在修改app.py和controller.py和canvas.py**
 
 ### 总的目录结构
 
@@ -41,4 +41,30 @@ pyqt_demo_
 |---requirements # 项目软件包
 ```
 
-**目前主要在修改app.py和controller.py和canvas.py**
+
+**Controls**:
+
+| Key                                                           | Description                        |
+| ------------------------------------------------------------- | ---------------------------------- |
+| <kbd>Left Mouse Button</kbd>                                  | Place a positive click             |
+| <kbd>Right Mouse Button</kbd>                                 | Place a negative click             |
+| <kbd>Scroll Wheel</kbd>                                       | Zoom an image in and out           |
+| <kbd>Right Mouse Button</kbd> + <br> <kbd>Move Mouse</kbd>    | Move an image                      |
+| <kbd>Space</kbd>                                              | Finish the current object mask     |
+
+@inproceedings{ritm2022,
+  title={Reviving iterative training with mask guidance for interactive segmentation},
+  author={Sofiiuk, Konstantin and Petrov, Ilya A and Konushin, Anton},
+  booktitle={2022 IEEE International Conference on Image Processing (ICIP)},
+  pages={3141--3145},
+  year={2022},
+  organization={IEEE}
+}
+
+@inproceedings{fbrs2020,
+   title={f-brs: Rethinking backpropagating refinement for interactive segmentation},
+   author={Sofiiuk, Konstantin and Petrov, Ilia and Barinova, Olga and Konushin, Anton},
+   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+   pages={8623--8632},
+   year={2020}
+}
