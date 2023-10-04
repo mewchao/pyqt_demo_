@@ -144,7 +144,7 @@ class CanvasImage(QMainWindow):
         # self.canvas.setFocus()
         # 实例化了MyEventFilter类，并将其安装到Canvas对象上
         event_filter = MyEventFilter()
-        image.installEventFilter(event_filter)
+        self.canvas.installEventFilter(event_filter)
 
     def grid(self, **kw):
         """ Put CanvasImage widget on the parent widget """
