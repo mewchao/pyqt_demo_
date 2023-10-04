@@ -51,7 +51,7 @@ pyqt_demo_
 | <kbd>Scroll Wheel</kbd>                                       | Zoom an image in and out           |
 | <kbd>Right Mouse Button</kbd> + <br> <kbd>Move Mouse</kbd>    | Move an image                      |
 | <kbd>Space</kbd>                                              | Finish the current object mask     |
-
+```
 @inproceedings{ritm2022,
   title={Reviving iterative training with mask guidance for interactive segmentation},
   author={Sofiiuk, Konstantin and Petrov, Ilya A and Konushin, Anton},
@@ -68,3 +68,4 @@ pyqt_demo_
    pages={8623--8632},
    year={2020}
 }
+```
