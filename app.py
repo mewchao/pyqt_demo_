@@ -337,9 +337,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self._set_click_dependent_widgets_state()
 
             if image is not None:
-
-                self.image_on_canvas.reload_image(pixmap, reset_canvas=True)
-                print("self.image_on_canvas.reload_image(ImageQt.Image.fromImage(self._convert_image(image)), reset_canvas)")
+                self.image_on_canvas.reload_image(pixmap)
 
 
     def _click_callback(self, is_positive, x, y):

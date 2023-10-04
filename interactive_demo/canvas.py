@@ -3,7 +3,7 @@ import sys
 import time
 import math
 from PIL import Image, ImageTk
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent, QRectF
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QWidget, QMainWindow, QVBoxLayout, QGraphicsScene
 
@@ -102,6 +102,14 @@ class CanvasImage(QMainWindow):
         self._click_callback = click_callback
 
     def reload_image(self, image, reset_canvas=True):
+        # Convert QPixmap to QImage
+        q_image = image.toImage()
+
+        # Convert QImage to PIL Image
+        image = Image.fromqimage(q_image)
+
+        self.__original_image = image.copy()
+        self.__current_image = image.copy()
         self.__original_image = image.copy()
         self.__current_image = image.copy()
 
@@ -114,8 +122,13 @@ class CanvasImage(QMainWindow):
             if self.container:
                 self.scene.removeItem(self.container)
 
-            scaled_pixmap = QPixmap.fromImage(self.__current_image.toqimage()).scaled(
-                self.imwidth * scale, self.imheight * scale, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            # 修改后的代码
+            scaled_width = int(round(self.imwidth * scale))
+            scaled_height = int(round(self.imheight * scale))
+            scaled_pixmap = QPixmap.fromImage(q_image).scaled(
+                scaled_width, scaled_height,
+                Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
 
             self.container = self.scene.addPixmap(scaled_pixmap)
             self.current_scale = scale
@@ -205,9 +218,13 @@ class CanvasImage(QMainWindow):
 
 # ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
-        self.canvas.configure(scrollregion=(0, 0, 5000, 5000))
-        self.canvas.scan_mark(0, 0)
-        self.canvas.scan_dragto(int(self.canvas.canvasx(0)), int(self.canvas.canvasy(0)), gain=1)
+        # 设置滚动区域
+        scroll_region = QRectF(0, 0, 5000, 5000)
+        self.canvas.setSceneRect(scroll_region)
+
+        # 重置视图的滚动位置
+        self.canvas.setScene(self.scene)
+        self.canvas.centerOn(0, 0)
 
     def _change_canvas_scale(self, relative_scale, x=0, y=0):
         new_scale = self.current_scale * relative_scale
