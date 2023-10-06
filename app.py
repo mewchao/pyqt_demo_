@@ -260,7 +260,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             # 目的是将这两个按钮从禁用状态切换到正常状态，使用户可以点击它们执行相应的操作，例如保存或加载遮罩
             self.save_mask_action.setEnabled(True)
             self.load_mask_action.setEnabled(True)
-            self._update_image()
 
     def _save_mask_callback(self):
         mask = self.controller.result_mask
@@ -294,13 +293,11 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
-        print("_update_image")
         # 这个方法用于将新的图像更新到应用程序的图像视图，根据control中的self.image生成可视化image
         image = self.controller.get_visualization(
             alpha_blend=self.state['alpha_blend'],
             click_radius=self.state['click_radius']
         )
-
         if self.image_on_canvas is None:
             self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
             self.image_on_canvas.register_click_callback(self._click_callback)
@@ -320,11 +317,9 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load an image first")
             return
 
-        # if self._check_entry(self):
+        # if self._check_entry(self)
         #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
-        print("_click_callback")
         self.controller.add_click(x, y, is_positive)
-        print("self.controller.add_click(x, y, is_positive)")
 
     def _set_click_dependent_widgets_state(self):
 
@@ -349,11 +344,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.network_clicks_spinbox.setEnabled(False)
             self.lbfgs_iters_label.setEnabled(False)
             self.lbfgs_iters_spinbox.setEnabled(False)
-
-    def _reset_last_object(self):
-        self.state['alpha_blend'] = 0.5
-        self.state['prob_thresh'] = 0.5
-        self.controller.reset_last_object()
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:

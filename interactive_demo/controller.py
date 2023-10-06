@@ -35,8 +35,10 @@ class InteractiveController:
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
         # 对象计数器初始化为零，用于跟踪当前识别的对象数量
         self.object_count = 0
-        # 清除之前的交互状态，以准备开始下一个对象的交互
+
         self.reset_last_object(update_image=False)
+        # 清除之前的交互状态，以准备开始下一个对象的交互
+        self.update_image_callback(reset_canvas=True)
 
     def set_mask(self, mask):
         if self.image.shape[:2] != mask.shape[:2]:
@@ -45,10 +47,9 @@ class InteractiveController:
 
         if len(self.probs_history) > 0:
             self.reset_last_object()
+
         # 将名为 mask 的 NumPy 数组转换为 np.float32 数据类型，并将结果存储在 self._init_mask 变量中
         self._init_mask = mask.astype(np.float32)
-        print("set_mask->self._init_mask = mask.astype(np.float32)")
-
 
         self.probs_history.append((np.zeros_like(self._init_mask), self._init_mask))
         #  _init_mask 转化为 PyTorch 张量
@@ -68,14 +69,12 @@ class InteractiveController:
         click = clicker.Click(is_positive=is_positive, coords=(x, y))
         # 将用户的点击操作添加到点击器（clicker）中
         self.clicker.add_click(click)
-
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
 
         # 获取预测结果。预测的结果存储在pred变量中。预测器（predictor）根据用户的点击和初始掩码（self._init_mask）来生成预测
         if self._init_mask is not None and len(self.clicker) == 1:
             # 这段代码的作用是将用户的点击操作以及先前的分割结果传递给分割模型，以获取最终的图像分割预测结果。这对于交互式图像分割应用程序非常重要，因为用户可以不断添加点击以改进分割结果
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
-
 
         # 清空CUDA内存缓存，以释放GPU内存。这通常用于优化内存使用，确保程序在GPU上运行时不会耗尽内存。
         torch.cuda.empty_cache()
@@ -84,9 +83,6 @@ class InteractiveController:
             self.probs_history.append((self.probs_history[-1][0], pred))
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
-
-        # print("self.probs_history:",end="")
-        # print(self.probs_history)
 
         self.update_image_callback()
 
@@ -167,37 +163,46 @@ class InteractiveController:
 
     @property
     def result_mask(self):
-
         result_mask = self._result_mask.copy()
-
         # 存储了模型的历史预测概率
         if self.probs_history:
             # 每个像素是否大于self.prob_thresh在self.current_object_prob中的像素值
             # 大于self.prob_thresh的位置上将result_mask中的像素标记为self.object_count + 1
             result_mask[self.current_object_prob > self.prob_thresh] = self.object_count + 1
-
         return result_mask
 
     # 生成一个可视化图像，该图像反映了原始图像、点击点和模型结果的混合。这可以用于可视化模型的效果以及用户交互的结果。
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
-            print("fun()get_visualization:self.image is None")
             return None
 
         # 将当前结果掩码（self.result_mask）存储在results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
         # result_mask被更新过
         results_mask_for_vis = self.result_mask
-
+        # print("get_visualization中")
+        # print("self.image",end="")
+        # print(self.image)
+        # print("results_mask_for_vis", end="")
+        # print(results_mask_for_vis)
+        # print("alpha_blend", end="")
+        # print(alpha_blend)
+        # print("self.clicker.clicks_list", end="")
+        # print(self.clicker.clicks_list)
+        # print("click_radius", end="")
+        # print(click_radius)
         # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
         vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
                                          clicks_list=self.clicker.clicks_list, radius=click_radius)
+        # print("self.probs_history", end="")
+        # print(self.probs_history)
 
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh
-
+            # print("total_mask",end="")
+            # print(total_mask)
             results_mask_for_vis[np.logical_not(total_mask)] = 0
-
             # 将更新后的results_mask_for_vis和透明度（alpha_blend）传递给该函数，以生成包含总体掩码和点击标记的最终可视化图像
             vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
-
+        # print("vis",end="")
+        # print(vis)
         return vis
