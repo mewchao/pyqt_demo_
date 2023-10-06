@@ -244,16 +244,8 @@ class CanvasImage(QMainWindow):
         y = pos.y()
         # if self.outside(x, y):
         #     return None
-        # # 获取self.container在self.canvas中的位置坐标
-        # box_image = self.canvas.coords(self.container)
-        # x = max(x - box_image[0], 0)
-        # y = max(y - box_image[1], 0)
-        #
-        # x = int(x / self.real_scale[0])
-        # y = int(y / self.real_scale[1])
 
         return y*self.scaled, x*self.scaled
-
     # ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
         # 设置滚动区域
