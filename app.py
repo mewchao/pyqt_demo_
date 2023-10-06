@@ -36,8 +36,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._add_buttons()
         self.show()
         print("self.show()")
-        self.image_item = QGraphicsPixmapItem()
-
     # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
     # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
     def _init_state(self):
@@ -294,33 +292,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.state['prob_thresh'] = 0.5
         self.controller.reset_last_object()
 
-    def _show_image(self, image):
-        if image is not None:
-            height, width, channel = image.shape
-            bytes_per_line = 3 * width
-            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(q_image)
-
-            # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
-            self.scene = QGraphicsScene()
-            self.canvas.setScene(self.scene)
-            # 添加self.image_item到场景中
-            self.scene.addItem(self.image_item)
-
-            # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放
-            target_size = 1000
-            current_width = pixmap.width()
-            current_height = pixmap.height()
-            if current_width > current_height:
-                new_width = target_size
-                new_height = int(current_height * (target_size / current_width))
-            else:
-                new_height = target_size
-                new_width = int(current_width * (target_size / current_height))
-            pixmap = pixmap.scaled(new_width, new_height)
-
-            # 设置图像到self.image_item上
-            self.image_item.setPixmap(pixmap)
 
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
@@ -329,15 +300,15 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             alpha_blend=self.state['alpha_blend'],
             click_radius=self.state['click_radius']
         )
-        self._show_image(image)
+
         if self.image_on_canvas is None:
             self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
             self.image_on_canvas.register_click_callback(self._click_callback)
 
         self._set_click_dependent_widgets_state()
 
-        # if image is not None:
-        # self.image_on_canvas.reload_image(pixmap, reset_canvas=True)
+        if image is not None:
+            self.image_on_canvas.reload_image(image, reset_canvas=True)
 
     # 当用户在图像上点击时，会触发_click_callback方法。
     def _click_callback(self, is_positive, x, y):

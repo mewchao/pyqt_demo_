@@ -5,8 +5,8 @@ import time
 
 from PIL import Image, ImageTk
 from PyQt5.QtCore import Qt, QEvent, QRectF, QObject
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QMainWindow, QGraphicsScene
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QMainWindow, QGraphicsScene, QGraphicsPixmapItem
 
 
 def handle_exception(exit_code=0):
@@ -83,13 +83,18 @@ class MyEventFilter(QObject):
 class CanvasImage(QMainWindow):
     def __init__(self, canvas_frame, canvas):
         super().__init__()
+
         self.current_scale = 1.0
         self.__delta = 1.2
         self.__previous_state = 0
-        self.__imframe = canvas_frame
+        self.canvas_frame = canvas_frame
 
         self.scene = QGraphicsScene()
-        self.canvas = QGraphicsView(self.scene, canvas)
+        self.image_item = QGraphicsPixmapItem()
+
+
+        self.canvas = canvas
+
         self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -111,14 +116,40 @@ class CanvasImage(QMainWindow):
     def register_click_callback(self,  click_callback):
         self._click_callback = click_callback
 
+    def _show_image(self, image):
+        if image is not None:
+            height, width, channel = image.shape
+            bytes_per_line = 3 * width
+            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(q_image)
+
+            # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
+            self.scene = QGraphicsScene()
+            self.canvas.setScene(self.scene)
+            # 添加self.image_item到场景中
+            self.scene.addItem(self.image_item)
+
+            # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放
+            target_size = 1000
+            current_width = pixmap.width()
+            current_height = pixmap.height()
+            if current_width > current_height:
+                new_width = target_size
+                new_height = int(current_height * (target_size / current_width))
+            else:
+                new_height = target_size
+                new_width = int(current_width * (target_size / current_height))
+            pixmap = pixmap.scaled(new_width, new_height)
+
+            # 设置图像到self.image_item上
+            self.image_item.setPixmap(pixmap)
+
     def reload_image(self, image, reset_canvas=True):
         # q_image = image.toImage()
         # image = Image.fromqimage(q_image)
         #
-        # self.__original_image = image.copy()
-        # self.__current_image = image.copy()
-        # self.__original_image = image.copy()
-        # self.__current_image = image.copy()
+        self.__original_image = image.copy()
+        self.__current_image = image.copy()
         #
         # if reset_canvas:
         #     self.imwidth, self.imheight = self.__original_image.size
@@ -143,6 +174,7 @@ class CanvasImage(QMainWindow):
 
         # self.canvas.setFocus()
         # 实例化了MyEventFilter类，并将其安装到Canvas对象上
+        self._show_image(self.__original_image)
         event_filter = MyEventFilter()
         self.canvas.installEventFilter(event_filter)
 
