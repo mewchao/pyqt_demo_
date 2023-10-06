@@ -63,24 +63,24 @@ class MyEventFilter(QObject):
         # 鼠标按钮按下事件
         elif event.type() == QEvent.MouseButtonPress:
             if event.button() == Qt.LeftButton:
-                print("左键点击了")
                 self.canvas_container.left_mouse_button(event)
             elif event.button() == Qt.RightButton:
-                obj.__right_mouse_button_pressed(event)
+                self.canvas_container.right_mouse_button_pressed(event)
             elif event.button() == Qt.MiddleButton:
-                obj.__right_mouse_button_pressed(event)
+                self.canvas_container.right_mouse_button_pressed(event)
         # 鼠标按钮释放事件
         elif event.type() == QEvent.MouseButtonRelease:
+            print("MouseButtonRelease")
             if event.button() == Qt.RightButton:
-                obj.__right_mouse_button_released(event)
+                self.canvas_container.right_mouse_button_released(event)
             elif event.button() == Qt.MiddleButton:
-                obj.__right_mouse_button_released(event)
+                self.canvas_container.right_mouse_button_released(event)
         # 鼠标移动事件
         elif event.type() == QEvent.MouseMove:
             if event.buttons() == Qt.RightButton:
-                obj.__right_mouse_button_motion(event)
+                self.canvas_container.right_mouse_button_motion(event)
             elif event.buttons() == Qt.MiddleButton:
-                obj.__right_mouse_button_motion(event)
+                self.canvas_container.right_mouse_button_motion(event)
         # 鼠标滚轮事件
         # elif event.type() == QEvent.Wheel:
         #     obj.__wheel(event)
@@ -173,10 +173,9 @@ class CanvasImage(QMainWindow):
         pos = self.canvas.mapToScene(event.x(), event.y())
         x = pos.x()
         y = pos.y()
-        # if self.outside(x, y):
-        #     return None
 
-        return y*self.scaled, x*self.scaled
+        return y * self.scaled, x * self.scaled
+
     # ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
         # 设置滚动区域
@@ -240,7 +239,6 @@ class CanvasImage(QMainWindow):
         self.__show_image()
 
     def left_mouse_button(self, event):
-        print("test")
         if self._click_callback is None:
             return
 
@@ -249,28 +247,38 @@ class CanvasImage(QMainWindow):
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
 
-    def __right_mouse_button_pressed(self, event):
-        """ Remember previous coordinates for scrolling with the mouse """
-        self._last_rb_click_time = time.time()
+    def right_mouse_button_pressed(self, event):
+
+        # self._last_rb_click_time = time.time()
         self._last_rb_click_event = event
-        self.canvas.scan_mark(event.x, event.y)
-
-    def __right_mouse_button_released(self, event):
-        time_delta = time.time() - self._last_rb_click_time
-        move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
-                               (event.y - self._last_rb_click_event.y) ** 2)
-        if time_delta > 0.5 or move_delta > 3:
-            return
-
-        if self._click_callback is None:
-            return
-
         coords = self._get_click_coordinates(self._last_rb_click_event)
+        self._click_callback(is_positive=False, x=coords[0], y=coords[1])
+        # self.canvas.scan_mark(coords[0], coords[1])
+        print("def right_mouse_button_pressed(self, event):结束")
 
-        if coords is not None:
-            self._click_callback(is_positive=False, x=coords[0], y=coords[1])
+    # def right_mouse_button_released(self, event):
+    #     print("右松进")
+    #
+    #     time_delta = time.time() - self._last_rb_click_time
+    #
+    #     coords = self._get_click_coordinates(event)
+    #     coords_ = self._get_click_coordinates(self._last_rb_click_event)
+    #
+    #     move_delta = math.sqrt((coords[0] - coords_[0]) ** 2 +
+    #                            (coords[1] - coords_[1]) ** 2)
+    #
+    #     if time_delta > 0.5 or move_delta > 3:
+    #         return
+    #
+    #     if self._click_callback is None:
+    #         return
+    #
+    #     if coords is not None:
+    #         print("testbnckjdncka")
+    #         self._click_callback(is_positive=False, x=coords_[0], y=coords_[1])
+    #     print("def __right_mouse_button_released(self, event):")
 
-    def __right_mouse_button_motion(self, event):
+    def right_mouse_button_motion(self, event):
         """ Drag (move) canvas to the new position """
         move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
                                (event.y - self._last_rb_click_event.y) ** 2)
