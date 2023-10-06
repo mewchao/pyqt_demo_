@@ -122,6 +122,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # 将canvas添加到canvas_frame_layout的第0行、第0列的位置
         self.canvas_frame_layout.addWidget(self.canvas, 0, 0)
+
         # canvas_frame中的所有小部件将按照canvas_frame_layout定义的规则进行排列和布局。
         self.canvas_frame.setLayout(self.canvas_frame_layout)
 
@@ -320,9 +321,10 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load an image first")
             return
 
-        if self._check_entry(self):
-            #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
-            self.controller.add_click(x, y, is_positive)
+        # if self._check_entry(self):
+        #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
+        self.controller.add_click(x, y, is_positive)
+        print("self.controller.add_click(x, y, is_positive)")
 
     def _set_click_dependent_widgets_state(self):
 
@@ -436,15 +438,13 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     # 递归函数，用于检查窗口中的所有子组件（widget）以确保它们都通过某种条件检查。
     def _check_entry(self, widget):
         all_checked = True
-        if widget.winfo_children is not None:
-            for w in widget.winfo_children():
-                all_checked = all_checked and self._check_entry(w)
+        for child_widget in widget.findChildren(QWidget):
+            all_checked = all_checked and self.check_entries(child_widget)
 
-        if getattr(widget, "_check_bounds", None) is not None:
-            all_checked = all_checked and widget._check_bounds(widget.get(), '-1')
+        if hasattr(widget, "check_bounds"):
+            all_checked = all_checked and widget.check_bounds(widget.text())
 
         return all_checked
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -475,3 +475,4 @@ def parse_args():
     cfg = exp.load_config_file(args.cfg, return_edict=True)
 
     return args, cfg
+

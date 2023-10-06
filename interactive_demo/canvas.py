@@ -8,7 +8,6 @@ from PyQt5.QtCore import Qt, QEvent, QRectF, QObject
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QMainWindow, QGraphicsScene, QGraphicsPixmapItem
 
-
 def handle_exception(exit_code=0):
     """ Use: @land.logger.handle_exception(0)
         before every function which could cast an exception """
@@ -48,9 +47,13 @@ class AutoScrollBar(QScrollBar):
 
 
 class MyEventFilter(QObject):
+    def __init__(self, canvas_container):
+        super().__init__()
+        self.canvas_container = canvas_container
     # eventFilter方法在PyQt中用于事件过滤
     # obj参数表示安装了事件过滤器的QObject对象，即接收事件的对象
     def eventFilter(self, obj, event):
+        print(type(obj))
         print(event.type())
         # 处理窗口大小改变事件
         if event.type() == QEvent.Resize:
@@ -58,7 +61,8 @@ class MyEventFilter(QObject):
         # 鼠标按钮按下事件
         elif event.type() == QEvent.MouseButtonPress:
             if event.button() == Qt.LeftButton:
-                obj.__left_mouse_button(event)
+                print("左键点击了")
+                self.canvas_container.left_mouse_button(event)
             elif event.button() == Qt.RightButton:
                 obj.__right_mouse_button_pressed(event)
             elif event.button() == Qt.MiddleButton:
@@ -106,14 +110,15 @@ class CanvasImage(QMainWindow):
         self.hbar.valueChanged.connect(self.__scroll_x)
         self.vbar.valueChanged.connect(self.__scroll_y)
 
-        # 绑定事件处理函数 将事件过滤器安装到Canvas上
-        self.canvas.installEventFilter(self)
-
         self.container = None
         self._click_callback = None
+        # 绑定事件处理函数 将事件过滤器安装到Canvas上
+        self.event_filter = MyEventFilter(self)  # 将CanvasImage类的实例传递给事件过滤器
+        self.canvas.installEventFilter(self.event_filter)
 
     def register_click_callback(self,  click_callback):
         self._click_callback = click_callback
+        print("self._click_callback = click_callback")
 
     def _show_image(self, image):
         if image is not None:
@@ -128,9 +133,10 @@ class CanvasImage(QMainWindow):
 
             # 添加self.image_item到场景中
             self.image_item = QGraphicsPixmapItem()
+            self.container=self.image_item
             self.scene.addItem(self.image_item)
 
-            # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放
+            # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放  高度固定等比例缩放
             target_size = 1000
             current_width = pixmap.width()
             current_height = pixmap.height()
@@ -144,10 +150,9 @@ class CanvasImage(QMainWindow):
 
             # 设置图像到self.image_item上
             self.image_item.setPixmap(pixmap)
+
     def reload_image(self, image, reset_canvas=True):
-        # q_image = image.toImage()
-        # image = Image.fromqimage(q_image)
-        #
+
         self.__original_image = image.copy()
         self.__current_image = image.copy()
         #
@@ -168,15 +173,11 @@ class CanvasImage(QMainWindow):
         #         Qt.KeepAspectRatio, Qt.SmoothTransformation
         #     )
         #
-        #     self.container = self.scene.addPixmap(scaled_pixmap)
         #     self.current_scale = scale
         #     self._reset_canvas_offset()
 
-        # self.canvas.setFocus()
-        # 实例化了MyEventFilter类，并将其安装到Canvas对象上
+        self.canvas.setFocus()
         self._show_image(self.__original_image)
-        event_filter = MyEventFilter()
-        self.canvas.installEventFilter(event_filter)
 
     def grid(self, **kw):
         """ Put CanvasImage widget on the parent widget """
@@ -243,18 +244,25 @@ class CanvasImage(QMainWindow):
             self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
     def _get_click_coordinates(self, event):
-        x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
-        y = self.canvas.canvasy(event.y)
-
-        if self.outside(x, y):
-            return None
-
-        box_image = self.canvas.coords(self.container)
-        x = max(x - box_image[0], 0)
-        y = max(y - box_image[1], 0)
-
-        x = int(x / self.real_scale[0])
-        y = int(y / self.real_scale[1])
+        print("我进来了")
+        # 获取鼠标事件在视图坐标系中的坐标
+        pos = self.canvas.mapToScene(event.x(), event.y())
+        x = pos.x()
+        y = pos.y()
+        # print(x)
+        # print(y)
+        # print("我进来了0")
+        # if self.outside(x, y):
+        #     return None
+        # print("我进来了1")
+        # 获取self.container在self.canvas中的位置坐标
+        # box_image = self.canvas.coords(self.container)
+        # print("我进来了2")
+        # x = max(x - box_image[0], 0)
+        # y = max(y - box_image[1], 0)
+        #
+        # x = int(x / self.real_scale[0])
+        # y = int(y / self.real_scale[1])
 
         return x, y
 
@@ -318,12 +326,14 @@ class CanvasImage(QMainWindow):
         self._change_canvas_scale(scale, x, y)
         self.__show_image()
 
-    def __left_mouse_button(self, event):
+    def left_mouse_button(self, event):
+        print("test")
         if self._click_callback is None:
+
             return
 
         coords = self._get_click_coordinates(event)
-
+        print(coords)
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
 
