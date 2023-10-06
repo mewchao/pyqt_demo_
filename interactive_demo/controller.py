@@ -76,11 +76,6 @@ class InteractiveController:
             # 这段代码的作用是将用户的点击操作以及先前的分割结果传递给分割模型，以获取最终的图像分割预测结果。这对于交互式图像分割应用程序非常重要，因为用户可以不断添加点击以改进分割结果
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
 
-        else:
-            print("len(self.clicker):", end="")
-            print(len(self.clicker))
-            print("self._init_mask:", end="")
-            print(self._init_mask)
 
         # 清空CUDA内存缓存，以释放GPU内存。这通常用于优化内存使用，确保程序在GPU上运行时不会耗尽内存。
         torch.cuda.empty_cache()
@@ -90,8 +85,8 @@ class InteractiveController:
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
 
-        print("self.probs_history:",end="")
-        print(self.probs_history)
+        # print("self.probs_history:",end="")
+        # print(self.probs_history)
 
         self.update_image_callback()
 

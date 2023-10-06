@@ -5,10 +5,8 @@ import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QAction
-from PyQt5.QtWidgets import QGraphicsPixmapItem, \
-    QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
+from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController

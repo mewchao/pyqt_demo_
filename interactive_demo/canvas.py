@@ -6,7 +6,8 @@ import time
 from PIL import Image, ImageTk
 from PyQt5.QtCore import Qt, QEvent, QRectF, QObject
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QScrollBar, QGraphicsView, QMainWindow, QGraphicsScene, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QScrollBar, QMainWindow, QGraphicsScene, QGraphicsPixmapItem
+
 
 def handle_exception(exit_code=0):
     """ Use: @land.logger.handle_exception(0)
@@ -23,6 +24,7 @@ def handle_exception(exit_code=0):
         return inner
 
     return wrapper
+
 
 # 根据滚动范围的大小来自动隐藏或显示滚动条，以提供更好的用户体验。这在某些情况下可以防止不必要的滚动条显示。
 class AutoScrollBar(QScrollBar):
@@ -50,6 +52,7 @@ class MyEventFilter(QObject):
     def __init__(self, canvas_container):
         super().__init__()
         self.canvas_container = canvas_container
+
     # eventFilter方法在PyQt中用于事件过滤
     # obj参数表示安装了事件过滤器的QObject对象，即接收事件的对象
     def eventFilter(self, obj, event):
@@ -80,9 +83,10 @@ class MyEventFilter(QObject):
             elif event.buttons() == Qt.MiddleButton:
                 obj.__right_mouse_button_motion(event)
         # 鼠标滚轮事件
-        elif event.type() == QEvent.Wheel:
-            obj.__wheel(event)
+        # elif event.type() == QEvent.Wheel:
+        #     obj.__wheel(event)
         return super().eventFilter(obj, event)
+
 
 class CanvasImage(QMainWindow):
     def __init__(self, canvas_frame, canvas):
@@ -94,7 +98,6 @@ class CanvasImage(QMainWindow):
         self.canvas_frame = canvas_frame
 
         self.scene = QGraphicsScene()
-
 
         self.canvas = canvas
 
@@ -116,7 +119,7 @@ class CanvasImage(QMainWindow):
         self.event_filter = MyEventFilter(self)  # 将CanvasImage类的实例传递给事件过滤器
         self.canvas.installEventFilter(self.event_filter)
 
-    def register_click_callback(self,  click_callback):
+    def register_click_callback(self, click_callback):
         self._click_callback = click_callback
         print("self._click_callback = click_callback")
 
@@ -133,19 +136,30 @@ class CanvasImage(QMainWindow):
 
             # 添加self.image_item到场景中
             self.image_item = QGraphicsPixmapItem()
-            self.container=self.image_item
+            self.container = self.image_item
             self.scene.addItem(self.image_item)
 
             # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放  高度固定等比例缩放
             target_size = 1000
             current_width = pixmap.width()
             current_height = pixmap.height()
+            # print("current_width")
+            # print(current_width)
+            # print("current_height")
+            # print(current_height)
+
+            self.scaled = current_height / target_size
+
             if current_width > current_height:
                 new_width = target_size
                 new_height = int(current_height * (target_size / current_width))
             else:
                 new_height = target_size
                 new_width = int(current_width * (target_size / current_height))
+                # print("new_width")
+                # print(new_width)
+                # print("new_height")
+                # print(new_height)
             pixmap = pixmap.scaled(new_width, new_height)
 
             # 设置图像到self.image_item上
@@ -155,27 +169,6 @@ class CanvasImage(QMainWindow):
 
         self.__original_image = image.copy()
         self.__current_image = image.copy()
-        #
-        # if reset_canvas:
-        #     self.imwidth, self.imheight = self.__original_image.size
-        #     self.__min_side = min(self.imwidth, self.imheight)
-        #
-        #     scale = min(self.canvas.viewport().width() / self.imwidth, self.canvas.viewport().height() / self.imheight)
-        #
-        #     if self.container:
-        #         self.scene.removeItem(self.container)
-        #
-        #     # 修改后的代码
-        #     scaled_width = int(round(self.imwidth * scale))
-        #     scaled_height = int(round(self.imheight * scale))
-        #     scaled_pixmap = QPixmap.fromImage(q_image).scaled(
-        #         scaled_width, scaled_height,
-        #         Qt.KeepAspectRatio, Qt.SmoothTransformation
-        #     )
-        #
-        #     self.current_scale = scale
-        #     self._reset_canvas_offset()
-
         self.canvas.setFocus()
         self._show_image(self.__original_image)
 
@@ -186,62 +179,62 @@ class CanvasImage(QMainWindow):
         self.__imframe.rowconfigure(0, weight=1)  # make canvas expandable
         self.__imframe.columnconfigure(0, weight=1)
 
-    def __show_image(self):
-        box_image = self.canvas.coords(self.container)  # get image area
-        box_canvas = (self.canvas.canvasx(0),  # get visible area of the canvas
-                      self.canvas.canvasy(0),
-                      self.canvas.canvasx(self.canvas.winfo_width()),
-                      self.canvas.canvasy(self.canvas.winfo_height()))
-        box_img_int = tuple(map(int, box_image))  # convert to integer or it will not work properly
-        # Get scroll region box
-        box_scroll = [min(box_img_int[0], box_canvas[0]), min(box_img_int[1], box_canvas[1]),
-                      max(box_img_int[2], box_canvas[2]), max(box_img_int[3], box_canvas[3])]
-        # Horizontal part of the image is in the visible area
-        if box_scroll[0] == box_canvas[0] and box_scroll[2] == box_canvas[2]:
-            box_scroll[0] = box_img_int[0]
-            box_scroll[2] = box_img_int[2]
-        # Vertical part of the image is in the visible area
-        if box_scroll[1] == box_canvas[1] and box_scroll[3] == box_canvas[3]:
-            box_scroll[1] = box_img_int[1]
-            box_scroll[3] = box_img_int[3]
-        # Convert scroll region to tuple and to integer
-        self.canvas.configure(scrollregion=tuple(map(int, box_scroll)))  # set scroll region
-        x1 = max(box_canvas[0] - box_image[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
-        y1 = max(box_canvas[1] - box_image[1], 0)
-        x2 = min(box_canvas[2], box_image[2]) - box_image[0]
-        y2 = min(box_canvas[3], box_image[3]) - box_image[1]
-
-        if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
-            border_width = 2
-            sx1, sx2 = x1 / self.current_scale, x2 / self.current_scale
-            sy1, sy2 = y1 / self.current_scale, y2 / self.current_scale
-            crop_x, crop_y = max(0, math.floor(sx1 - border_width)), max(0, math.floor(sy1 - border_width))
-            crop_w, crop_h = math.ceil(sx2 - sx1 + 2 * border_width), math.ceil(sy2 - sy1 + 2 * border_width)
-            crop_w = min(crop_w, self.__original_image.width - crop_x)
-            crop_h = min(crop_h, self.__original_image.height - crop_y)
-
-            __current_image = self.__original_image.crop((crop_x, crop_y,
-                                                          crop_x + crop_w, crop_y + crop_h))
-            crop_zw = int(round(crop_w * self.current_scale))
-            crop_zh = int(round(crop_h * self.current_scale))
-            zoom_sx, zoom_sy = crop_zw / crop_w, crop_zh / crop_h
-            crop_zx, crop_zy = crop_x * zoom_sx, crop_y * zoom_sy
-            self.real_scale = (zoom_sx, zoom_sy)
-
-            interpolation = Image.NEAREST if self.current_scale > 2.0 else Image.ANTIALIAS
-            __current_image = __current_image.resize((crop_zw, crop_zh), interpolation)
-            zx1, zy1 = x1 - crop_zx, y1 - crop_zy
-            zx2 = min(zx1 + self.canvas.winfo_width(), __current_image.width)
-            zy2 = min(zy1 + self.canvas.winfo_height(), __current_image.height)
-
-            self.__current_image = __current_image.crop((zx1, zy1, zx2, zy2))
-
-            imagetk = ImageTk.PhotoImage(self.__current_image)
-            imageid = self.canvas.create_image(max(box_canvas[0], box_img_int[0]),
-                                               max(box_canvas[1], box_img_int[1]),
-                                               anchor='nw', image=imagetk)
-            self.canvas.lower(imageid)  # set image into background
-            self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
+    # def __show_image(self):
+    #     box_image = self.canvas.coords(self.container)  # get image area
+    #     box_canvas = (self.canvas.canvasx(0),  # get visible area of the canvas
+    #                   self.canvas.canvasy(0),
+    #                   self.canvas.canvasx(self.canvas.winfo_width()),
+    #                   self.canvas.canvasy(self.canvas.winfo_height()))
+    #     box_img_int = tuple(map(int, box_image))  # convert to integer or it will not work properly
+    #     # Get scroll region box
+    #     box_scroll = [min(box_img_int[0], box_canvas[0]), min(box_img_int[1], box_canvas[1]),
+    #                   max(box_img_int[2], box_canvas[2]), max(box_img_int[3], box_canvas[3])]
+    #     # Horizontal part of the image is in the visible area
+    #     if box_scroll[0] == box_canvas[0] and box_scroll[2] == box_canvas[2]:
+    #         box_scroll[0] = box_img_int[0]
+    #         box_scroll[2] = box_img_int[2]
+    #     # Vertical part of the image is in the visible area
+    #     if box_scroll[1] == box_canvas[1] and box_scroll[3] == box_canvas[3]:
+    #         box_scroll[1] = box_img_int[1]
+    #         box_scroll[3] = box_img_int[3]
+    #     # Convert scroll region to tuple and to integer
+    #     self.canvas.configure(scrollregion=tuple(map(int, box_scroll)))  # set scroll region
+    #     x1 = max(box_canvas[0] - box_image[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
+    #     y1 = max(box_canvas[1] - box_image[1], 0)
+    #     x2 = min(box_canvas[2], box_image[2]) - box_image[0]
+    #     y2 = min(box_canvas[3], box_image[3]) - box_image[1]
+    #
+    #     if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
+    #         border_width = 2
+    #         sx1, sx2 = x1 / self.current_scale, x2 / self.current_scale
+    #         sy1, sy2 = y1 / self.current_scale, y2 / self.current_scale
+    #         crop_x, crop_y = max(0, math.floor(sx1 - border_width)), max(0, math.floor(sy1 - border_width))
+    #         crop_w, crop_h = math.ceil(sx2 - sx1 + 2 * border_width), math.ceil(sy2 - sy1 + 2 * border_width)
+    #         crop_w = min(crop_w, self.__original_image.width - crop_x)
+    #         crop_h = min(crop_h, self.__original_image.height - crop_y)
+    #
+    #         __current_image = self.__original_image.crop((crop_x, crop_y,
+    #                                                       crop_x + crop_w, crop_y + crop_h))
+    #         crop_zw = int(round(crop_w * self.current_scale))
+    #         crop_zh = int(round(crop_h * self.current_scale))
+    #         zoom_sx, zoom_sy = crop_zw / crop_w, crop_zh / crop_h
+    #         crop_zx, crop_zy = crop_x * zoom_sx, crop_y * zoom_sy
+    #         self.real_scale = (zoom_sx, zoom_sy)
+    #
+    #         interpolation = Image.NEAREST if self.current_scale > 2.0 else Image.ANTIALIAS
+    #         __current_image = __current_image.resize((crop_zw, crop_zh), interpolation)
+    #         zx1, zy1 = x1 - crop_zx, y1 - crop_zy
+    #         zx2 = min(zx1 + self.canvas.winfo_width(), __current_image.width)
+    #         zy2 = min(zy1 + self.canvas.winfo_height(), __current_image.height)
+    #
+    #         self.__current_image = __current_image.crop((zx1, zy1, zx2, zy2))
+    #
+    #         imagetk = ImageTk.PhotoImage(self.__current_image)
+    #         imageid = self.canvas.create_image(max(box_canvas[0], box_img_int[0]),
+    #                                            max(box_canvas[1], box_img_int[1]),
+    #                                            anchor='nw', image=imagetk)
+    #         self.canvas.lower(imageid)  # set image into background
+    #         self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
 
     def _get_click_coordinates(self, event):
         print("我进来了")
@@ -249,24 +242,19 @@ class CanvasImage(QMainWindow):
         pos = self.canvas.mapToScene(event.x(), event.y())
         x = pos.x()
         y = pos.y()
-        # print(x)
-        # print(y)
-        # print("我进来了0")
         # if self.outside(x, y):
         #     return None
-        # print("我进来了1")
-        # 获取self.container在self.canvas中的位置坐标
+        # # 获取self.container在self.canvas中的位置坐标
         # box_image = self.canvas.coords(self.container)
-        # print("我进来了2")
         # x = max(x - box_image[0], 0)
         # y = max(y - box_image[1], 0)
         #
         # x = int(x / self.real_scale[0])
         # y = int(y / self.real_scale[1])
 
-        return x, y
+        return y*self.scaled, x*self.scaled
 
-# ================================================ Canvas Routines =================================================
+    # ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
         # 设置滚动区域
         scroll_region = QRectF(0, 0, 5000, 5000)
@@ -283,7 +271,7 @@ class CanvasImage(QMainWindow):
             return
 
         if new_scale * self.__original_image.width < self.canvas.winfo_width() and \
-           new_scale * self.__original_image.height < self.canvas.winfo_height():
+                new_scale * self.__original_image.height < self.canvas.winfo_height():
             return
 
         self.current_scale = new_scale
@@ -312,6 +300,8 @@ class CanvasImage(QMainWindow):
     # ================================================ Mouse callbacks =================================================
     def __wheel(self, event):
         """ Zoom with mouse wheel """
+
+        # 设置或者是得到鼠标相对于目标事件的父元素的外边界在x坐标上的位置。
         x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
         y = self.canvas.canvasy(event.y)
         if self.outside(x, y): return  # zoom only inside image area
@@ -329,7 +319,6 @@ class CanvasImage(QMainWindow):
     def left_mouse_button(self, event):
         print("test")
         if self._click_callback is None:
-
             return
 
         coords = self._get_click_coordinates(event)
