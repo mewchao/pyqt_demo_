@@ -90,7 +90,6 @@ class CanvasImage(QMainWindow):
         self.canvas_frame = canvas_frame
 
         self.scene = QGraphicsScene()
-        self.image_item = QGraphicsPixmapItem()
 
 
         self.canvas = canvas
@@ -126,7 +125,9 @@ class CanvasImage(QMainWindow):
             # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
             self.scene = QGraphicsScene()
             self.canvas.setScene(self.scene)
+
             # 添加self.image_item到场景中
+            self.image_item = QGraphicsPixmapItem()
             self.scene.addItem(self.image_item)
 
             # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放
@@ -143,7 +144,6 @@ class CanvasImage(QMainWindow):
 
             # 设置图像到self.image_item上
             self.image_item.setPixmap(pixmap)
-
     def reload_image(self, image, reset_canvas=True):
         # q_image = image.toImage()
         # image = Image.fromqimage(q_image)

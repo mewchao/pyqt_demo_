@@ -308,6 +308,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._set_click_dependent_widgets_state()
 
         if image is not None:
+            # 展示图片
             self.image_on_canvas.reload_image(image, reset_canvas=True)
 
     # 当用户在图像上点击时，会触发_click_callback方法。
