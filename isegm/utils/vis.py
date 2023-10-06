@@ -122,7 +122,7 @@ def draw_with_blend_and_clicks(img, mask=None, alpha=0.6, clicks_list=None, pos_
             alpha * rgb_mask
         result = result.astype(np.uint8)
 
-        # result = (result * (1 - alpha) + alpha * rgb_mask).astype(np.uint8)
+        result = (result * (1 - alpha) + alpha * rgb_mask).astype(np.uint8)
 
     if clicks_list is not None and len(clicks_list) > 0:
         pos_points = [click.coords for click in clicks_list if click.is_positive]

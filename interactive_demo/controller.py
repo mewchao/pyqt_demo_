@@ -45,11 +45,15 @@ class InteractiveController:
 
         if len(self.probs_history) > 0:
             self.reset_last_object()
-
+        # 将名为 mask 的 NumPy 数组转换为 np.float32 数据类型，并将结果存储在 self._init_mask 变量中
         self._init_mask = mask.astype(np.float32)
+        print("set_mask->self._init_mask = mask.astype(np.float32)")
+
+
         self.probs_history.append((np.zeros_like(self._init_mask), self._init_mask))
         #  _init_mask 转化为 PyTorch 张量
         self._init_mask = torch.tensor(self._init_mask, device=self.device).unsqueeze(0).unsqueeze(0)
+
         self.clicker.click_indx_offset = 1
 
     # 处理用户在图像上的点击操作，用于进行交互式图像分割。
@@ -61,24 +65,33 @@ class InteractiveController:
         })
 
         # 创建一个clicker.Click对象，表示用户的点击操作。is_positive参数表示点击是否是正面（positive）,coords 参数表示点击的坐标位置(x, y)
-        click = clicker.Click(is_positive=is_positive, coords=(y, x))
-
+        click = clicker.Click(is_positive=is_positive, coords=(x, y))
         # 将用户的点击操作添加到点击器（clicker）中
         self.clicker.add_click(click)
+
+        pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
 
         # 获取预测结果。预测的结果存储在pred变量中。预测器（predictor）根据用户的点击和初始掩码（self._init_mask）来生成预测
         if self._init_mask is not None and len(self.clicker) == 1:
             # 这段代码的作用是将用户的点击操作以及先前的分割结果传递给分割模型，以获取最终的图像分割预测结果。这对于交互式图像分割应用程序非常重要，因为用户可以不断添加点击以改进分割结果
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
 
+        else:
+            print("len(self.clicker):", end="")
+            print(len(self.clicker))
+            print("self._init_mask:", end="")
+            print(self._init_mask)
+
         # 清空CUDA内存缓存，以释放GPU内存。这通常用于优化内存使用，确保程序在GPU上运行时不会耗尽内存。
         torch.cuda.empty_cache()
 
-        # 将当前的预测结果pred附加到self.probs_history列表中。如果self.probs_history已经存在，则将新的预测结果与上一个结果一起添加，否则创建一个新的列表并添加当前预测结果
         if self.probs_history:
             self.probs_history.append((self.probs_history[-1][0], pred))
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
+
+        print("self.probs_history:",end="")
+        print(self.probs_history)
 
         self.update_image_callback()
 
@@ -141,10 +154,14 @@ class InteractiveController:
         self._init_mask = None
         self.clicker.click_indx_offset = 0
 
+    # 这个属性用于获取当前对象的概率分布，它会根据self.probs_history中的数据计算并返回相应的值
     @property
     def current_object_prob(self):
         if self.probs_history:
+            # 如果self.probs_history存在，就从self.probs_history[-1]中获取当前的概率分布。
+            # 通常，self.probs_history[-1]包含两个部分的概率信息：current_prob_total和current_prob_additive
             current_prob_total, current_prob_additive = self.probs_history[-1]
+            # 个元素进行比较，返回一个新的数组，其中每个元素是两者中相应位置上的较大值。
             return np.maximum(current_prob_total, current_prob_additive)
         else:
             return None
@@ -155,18 +172,25 @@ class InteractiveController:
 
     @property
     def result_mask(self):
+
         result_mask = self._result_mask.copy()
+
+        # 存储了模型的历史预测概率
         if self.probs_history:
+            # 每个像素是否大于self.prob_thresh在self.current_object_prob中的像素值
+            # 大于self.prob_thresh的位置上将result_mask中的像素标记为self.object_count + 1
             result_mask[self.current_object_prob > self.prob_thresh] = self.object_count + 1
+
         return result_mask
 
-    # get_visualization方法用于生成图像的可视化，以便在用户界面中显示
+    # 生成一个可视化图像，该图像反映了原始图像、点击点和模型结果的混合。这可以用于可视化模型的效果以及用户交互的结果。
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
             print("fun()get_visualization:self.image is None")
             return None
 
         # 将当前结果掩码（self.result_mask）存储在results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
+        # result_mask被更新过
         results_mask_for_vis = self.result_mask
 
         # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
@@ -175,7 +199,9 @@ class InteractiveController:
 
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh
+
             results_mask_for_vis[np.logical_not(total_mask)] = 0
+
             # 将更新后的results_mask_for_vis和透明度（alpha_blend）传递给该函数，以生成包含总体掩码和点击标记的最终可视化图像
             vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
 

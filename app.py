@@ -36,6 +36,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._add_buttons()
         self.show()
         print("self.show()")
+
     # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
     # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
     def _init_state(self):
@@ -293,9 +294,9 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.state['prob_thresh'] = 0.5
         self.controller.reset_last_object()
 
-
     # 更新应用程序中的图像显示，以便将最新的可视化内容显示在界面上
     def _update_image(self, reset_canvas=False):
+        print("_update_image")
         # 这个方法用于将新的图像更新到应用程序的图像视图，根据control中的self.image生成可视化image
         image = self.controller.get_visualization(
             alpha_blend=self.state['alpha_blend'],
@@ -323,6 +324,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # if self._check_entry(self):
         #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
+        print("_click_callback")
         self.controller.add_click(x, y, is_positive)
         print("self.controller.add_click(x, y, is_positive)")
 
@@ -351,13 +353,13 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.lbfgs_iters_spinbox.setEnabled(False)
 
     def _reset_last_object(self):
-        self.state['alpha_blend'].set(0.5)
-        self.state['prob_thresh'].set(0.5)
+        self.state['alpha_blend'] = 0.5
+        self.state['prob_thresh'] = 0.5
         self.controller.reset_last_object()
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:
-            self.controller.prob_thresh = self.state['prob_thresh'].get()
+            self.controller.prob_thresh = self.state['prob_thresh']
             self._update_image()
 
     def _update_blend_alpha(self, value):
@@ -446,6 +448,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         return all_checked
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -475,4 +478,3 @@ def parse_args():
     cfg = exp.load_config_file(args.cfg, return_edict=True)
 
     return args, cfg
-

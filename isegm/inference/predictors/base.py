@@ -73,6 +73,7 @@ class BasePredictor(object):
             return self.get_prediction(clicker)
 
         self.prev_prediction = prediction
+        # 返回预测的 NumPy 数组形式。
         return prediction.cpu().numpy()[0, 0]
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
