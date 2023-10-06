@@ -160,6 +160,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         self.finish_object_button = QtWidgets.QPushButton("Finish\nobject", self.clicks_options_frame)
         self.finish_object_button.setGeometry(10, 20, 100, 150)
+        self.finish_object_button.clicked.connect(self.controller.finish_object)
         self.finish_object_button.setEnabled(False)
 
         self.undo_click_button = QtWidgets.QPushButton("Undo click", self.clicks_options_frame)
@@ -317,8 +318,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load an image first")
             return
 
-        # if self._check_entry(self)
-        #  True，它会将用户的点击信息传递给 self.controller.add_click(x, y, is_positive)
         self.controller.add_click(x, y, is_positive)
 
     def _set_click_dependent_widgets_state(self):
