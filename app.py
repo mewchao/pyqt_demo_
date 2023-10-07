@@ -165,10 +165,12 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         self.undo_click_button = QtWidgets.QPushButton("Undo click", self.clicks_options_frame)
         self.undo_click_button.setGeometry(10, 20, 100, 150)
+        self.undo_click_button.clicked.connect(self.controller.undo_click)
         self.undo_click_button.setEnabled(False)
 
         self.reset_clicks_button = QtWidgets.QPushButton("Reset clicks", self.clicks_options_frame)
         self.reset_clicks_button.setGeometry(10, 20, 100, 150)
+        self.reset_clicks_button.clicked.connect(self._reset_last_object)
         self.reset_clicks_button.setEnabled(False)
 
         Clickmanagement_shorizontal_layout_H.insertWidget(0, self.finish_object_button)
@@ -343,6 +345,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.network_clicks_spinbox.setEnabled(False)
             self.lbfgs_iters_label.setEnabled(False)
             self.lbfgs_iters_spinbox.setEnabled(False)
+
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:

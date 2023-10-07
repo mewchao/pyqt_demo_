@@ -1,11 +1,11 @@
 import math
 import os
 import sys
-import time
 
 from PyQt5.QtCore import Qt, QEvent, QRectF, QObject
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QScrollBar, QMainWindow, QGraphicsScene, QGraphicsPixmapItem
+from pyqt5_plugins.examplebuttonplugin import QtGui
 
 
 def handle_exception(exit_code=0):
@@ -55,26 +55,14 @@ class MyEventFilter(QObject):
     # eventFilter方法在PyQt中用于事件过滤
     # obj参数表示安装了事件过滤器的QObject对象，即接收事件的对象
     def eventFilter(self, obj, event):
-        # print(type(obj))
-        # print(event.type())
-        # 处理窗口大小改变事件
-        if event.type() == QEvent.Resize:
-            obj.__size_changed(event)
         # 鼠标按钮按下事件
-        elif event.type() == QEvent.MouseButtonPress:
+        if event.type() == QEvent.MouseButtonPress:
             if event.button() == Qt.LeftButton:
                 self.canvas_container.left_mouse_button(event)
             elif event.button() == Qt.RightButton:
                 self.canvas_container.right_mouse_button_pressed(event)
             elif event.button() == Qt.MiddleButton:
                 self.canvas_container.right_mouse_button_pressed(event)
-        # 鼠标按钮释放事件
-        elif event.type() == QEvent.MouseButtonRelease:
-            print("MouseButtonRelease")
-            if event.button() == Qt.RightButton:
-                self.canvas_container.right_mouse_button_released(event)
-            elif event.button() == Qt.MiddleButton:
-                self.canvas_container.right_mouse_button_released(event)
         # 鼠标移动事件
         elif event.type() == QEvent.MouseMove:
             if event.buttons() == Qt.RightButton:
@@ -82,8 +70,8 @@ class MyEventFilter(QObject):
             elif event.buttons() == Qt.MiddleButton:
                 self.canvas_container.right_mouse_button_motion(event)
         # 鼠标滚轮事件
-        # elif event.type() == QEvent.Wheel:
-        #     obj.__wheel(event)
+        elif event.type() == QEvent.Wheel:
+            self.canvas_container.wheel(event)
         return super().eventFilter(obj, event)
 
 
@@ -91,15 +79,16 @@ class CanvasImage(QMainWindow):
     def __init__(self, canvas_frame, canvas):
         super().__init__()
 
-        self.current_scale = 1.0
-        self.__delta = 1.2
+        self.scaled = None
+        # Zoommagnitude可以用来表示缩放操作的大小或比例
+        self.__delta = 1.1
+        self.new_scale = 1.0
+        self.per_scale = 1.0
         self.__previous_state = 0
+
         self.canvas_frame = canvas_frame
-
         self.scene = QGraphicsScene()
-
         self.canvas = canvas
-
         self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -125,8 +114,8 @@ class CanvasImage(QMainWindow):
         if image is not None:
             height, width, channel = image.shape
             bytes_per_line = 3 * width
-            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(q_image)
+            self.q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            self.pixmap = QPixmap.fromImage(self.q_image)
 
             # 创建一个QGraphicsScene对象，并设置为self.canvas的场景
             self.scene = QGraphicsScene()
@@ -139,26 +128,27 @@ class CanvasImage(QMainWindow):
 
             # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放  高度固定等比例缩放
             target_size = 1000
-            current_width = pixmap.width()
-            current_height = pixmap.height()
+            current_width = self.pixmap.width()
+            current_height = self.pixmap.height()
 
             self.scaled = current_height / target_size
 
+            # 让原本比较大的长度固定为1000
             if current_width > current_height:
                 new_width = target_size
-                new_height = int(current_height * (target_size / current_width))
+                new_height = int(current_height * (1 / self.scaled))
             else:
                 new_height = target_size
-                new_width = int(current_width * (target_size / current_height))
-            pixmap = pixmap.scaled(new_width, new_height)
+                new_width = int(current_width * (1 / self.scaled))
+
+            self.pixmap = self.pixmap.scaled(new_width, new_height)
 
             # 设置图像到self.image_item上
-            self.image_item.setPixmap(pixmap)
+            self.image_item.setPixmap(self.pixmap)
 
     def reload_image(self, image, reset_canvas=True):
         self.__original_image = image.copy()
         self.__current_image = image.copy()
-        self.canvas.setFocus()
         self._show_image(self.__original_image)
 
     def grid(self, **kw):
@@ -171,12 +161,12 @@ class CanvasImage(QMainWindow):
     def _get_click_coordinates(self, event):
         # 获取鼠标事件在视图坐标系中的坐标
         pos = self.canvas.mapToScene(event.x(), event.y())
+
         x = pos.x()
         y = pos.y()
 
         return y * self.scaled, x * self.scaled
 
-    # ================================================ Canvas Routines =================================================
     def _reset_canvas_offset(self):
         # 设置滚动区域
         scroll_region = QRectF(0, 0, 5000, 5000)
@@ -185,19 +175,6 @@ class CanvasImage(QMainWindow):
         # 重置视图的滚动位置
         self.canvas.setScene(self.scene)
         self.canvas.centerOn(0, 0)
-
-    def _change_canvas_scale(self, relative_scale, x=0, y=0):
-        new_scale = self.current_scale * relative_scale
-
-        if new_scale > 20:
-            return
-
-        if new_scale * self.__original_image.width < self.canvas.winfo_width() and \
-                new_scale * self.__original_image.height < self.canvas.winfo_height():
-            return
-
-        self.current_scale = new_scale
-        self.canvas.scale('all', x, y, relative_scale, relative_scale)  # rescale all objects
 
     # noinspection PyUnusedLocal
     def __scroll_x(self, *args, **kwargs):
@@ -211,32 +188,68 @@ class CanvasImage(QMainWindow):
         self.canvas.yview(*args)  # scroll vertically
         self.__show_image()  # redraw the image
 
-    def __size_changed(self):
-        new_scale_w = self.canvas.winfo_width() / (self.current_scale * self.__original_image.width)
-        new_scale_h = self.canvas.winfo_height() / (self.current_scale * self.__original_image.height)
-        new_scale = min(new_scale_w, new_scale_h)
-        if new_scale > 1.0:
-            self._change_canvas_scale(new_scale)
-        self.__show_image()
+    def wheel(self, event):
 
-    # ================================================ Mouse callbacks =================================================
-    def __wheel(self, event):
-        """ Zoom with mouse wheel """
+        coords = self._get_click_coordinates(event)
+        y = coords[0]
+        x = coords[1]
 
-        # 设置或者是得到鼠标相对于目标事件的父元素的外边界在x坐标上的位置。
-        x = self.canvas.canvasx(event.x)  # get coordinates of the event on the canvas
-        y = self.canvas.canvasy(event.y)
-        if self.outside(x, y): return  # zoom only inside image area
+        self.per_scale = 1.0
 
-        scale = 1.0
-        # Respond to Linux (event.num) or Windows (event.delta) wheel event
-        if event.num == 5 or event.delta == -120 or event.delta == 1:  # scroll down, zoom out, smaller
-            scale /= self.__delta
-        if event.num == 4 or event.delta == 120 or event.delta == -1:  # scroll up, zoom in, bigger
-            scale *= self.__delta
+        # 检查鼠标滚轮向下滚动的情况。它会根据不同的条件来执行缩小图像的操作
+        delta = event.angleDelta().y()  # 获取滚轮滚动的垂直方向的增量
 
-        self._change_canvas_scale(scale, x, y)
-        self.__show_image()
+        # 根据滚动方向来确定缩放比例的变化
+        if delta < 0:  # 向下滚动，缩小图像
+            print("delta")
+            print(delta)
+            self.per_scale /= self.__delta
+            print("per_scale")
+            print(self.per_scale)
+
+
+        elif delta > 0:  # 向上滚动，放大图像
+            print("delta")
+            print(delta)
+            self.per_scale *= self.__delta
+            print("per_scale")
+            print(self.per_scale)
+
+        # 传递缩放的中心点  self.per_scale=1.1
+        self._change_pixmmap_scale(self.per_scale, x, y)
+
+    def _change_pixmmap_scale(self, relative_scale, x=0, y=0):
+
+        height, width, channel = self.__original_image.shape
+
+        if relative_scale > 20:
+            return
+        if relative_scale * width < self.canvas.width() and relative_scale * height < self.canvas.height():
+            return
+
+        # 计算缩放后的中心点坐标
+        center_x = x / relative_scale
+        center_y = y / relative_scale
+
+        # 创建一个变换矩阵，按照正确的顺序进行平移、缩放和反向平移
+        transform = QtGui.QTransform()
+        # 将中心点 (center_x, center_y) 移动到坐标系统的原点，以便在之后的缩放操作中以这个点为中心进行缩放
+        transform.translate(center_x, center_y)
+        transform.scale(relative_scale, relative_scale)
+        transform.translate(-center_x, -center_y)
+
+        # 使用变换矩阵对 QPixmap 进行缩放
+        self.pixmap = self.pixmap.transformed(transform)
+
+        print("缩放一次")
+        print("_change_pixmmap_scale中")
+        print("未处理:")
+        print(x, y)
+        print("处理后")
+        print(center_x, center_y)
+
+        # 设置图像到self.image_item上
+        self.image_item.setPixmap(self.pixmap)
 
     def left_mouse_button(self, event):
         if self._click_callback is None:
@@ -256,30 +269,8 @@ class CanvasImage(QMainWindow):
         # self.canvas.scan_mark(coords[0], coords[1])
         print("def right_mouse_button_pressed(self, event):结束")
 
-    # def right_mouse_button_released(self, event):
-    #     print("右松进")
-    #
-    #     time_delta = time.time() - self._last_rb_click_time
-    #
-    #     coords = self._get_click_coordinates(event)
-    #     coords_ = self._get_click_coordinates(self._last_rb_click_event)
-    #
-    #     move_delta = math.sqrt((coords[0] - coords_[0]) ** 2 +
-    #                            (coords[1] - coords_[1]) ** 2)
-    #
-    #     if time_delta > 0.5 or move_delta > 3:
-    #         return
-    #
-    #     if self._click_callback is None:
-    #         return
-    #
-    #     if coords is not None:
-    #         print("testbnckjdncka")
-    #         self._click_callback(is_positive=False, x=coords_[0], y=coords_[1])
-    #     print("def __right_mouse_button_released(self, event):")
-
     def right_mouse_button_motion(self, event):
-        """ Drag (move) canvas to the new position """
+
         move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
                                (event.y - self._last_rb_click_event.y) ** 2)
         if move_delta > 3:
