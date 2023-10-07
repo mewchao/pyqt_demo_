@@ -25,26 +25,21 @@ def handle_exception(exit_code=0):
     return wrapper
 
 
-# 根据滚动范围的大小来自动隐藏或显示滚动条，以提供更好的用户体验。这在某些情况下可以防止不必要的滚动条显示。
 class AutoScrollBar(QScrollBar):
-    def __init__(self, orientation, parent=None):
-        super().__init__(orientation, parent)
-        self.hide_if_not_needed()
+    """ A scrollbar that hides itself if it's not needed. Works with any layout manager. """
 
-    def hide_if_not_needed(self):
-        lo = self.minimum()
-        hi = self.maximum()
-        if lo <= 0.0 and hi >= 1.0:
-            self.setVisible(False)
+    def set(self, min_val, max_val):
+        if min_val <= 0.0 and max_val >= 1.0:
+            self.hide()
         else:
-            self.setVisible(True)
-
-    def setRange(self, min_val, max_val):
-        if min_val != max_val:
+            self.show()
             super().setRange(min_val, max_val)
-        else:
-            raise ValueError("Cannot set a range with min_val equal to max_val")
-        self.hide_if_not_needed()
+
+    def show(self):
+        self.setVisible(True)
+
+    def hide(self):
+        self.setVisible(False)
 
 
 class MyEventFilter(QObject):
@@ -92,8 +87,13 @@ class CanvasImage(QMainWindow):
         self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.hbar = AutoScrollBar(Qt.Horizontal, canvas_frame)
-        self.vbar = AutoScrollBar(Qt.Vertical, canvas_frame)
+        # 创建水平滚动条和垂直滚动条
+        self.hbar = AutoScrollBar(Qt.Horizontal, self)
+        self.vbar = AutoScrollBar(Qt.Vertical, self)
+
+        # 设置滚动条范围
+        self.hbar.setRange(0, 100)  # 根据您的需求设置范围
+        self.vbar.setRange(0, 100)  # 根据您的需求设置范围
 
         self.canvas.setHorizontalScrollBar(self.hbar)
         self.canvas.setVerticalScrollBar(self.vbar)
@@ -143,8 +143,14 @@ class CanvasImage(QMainWindow):
 
             self.pixmap = self.pixmap.scaled(new_width, new_height)
 
+            # layout = QVBoxLayout()
+            # layout.addWidget(self.scene)
+            # layout.addWidget(self.vbar)
+            # self.setLayout(layout)  # 设置布局为窗口的布局
+
             # 设置图像到self.image_item上
             self.image_item.setPixmap(self.pixmap)
+
 
     def reload_image(self, image, reset_canvas=True):
         self.__original_image = image.copy()

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QAction, QScrollArea, QLabel
 from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
 
 from interactive_demo.canvas import CanvasImage
@@ -32,6 +32,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._add_window()
         self._add_canvas()
         self._add_buttons()
+        # self._add_scroll()
         self.show()
         print("self.show()")
 
@@ -96,7 +97,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     # 这是整个窗口的布局
     def _add_window(self):
-        self.setWindowTitle("Interactive Demo App")
+        self.setWindowTitle("Interactive_Demo_App")
         self.setGeometry(0, 0, 1300, 1000)
 
         # 创建一个名为central_widget的QWidget，设置中央部件的大小为800x600像素 它将作为主窗口的中央部件，也就是主要的可见区域，设置为主窗口的中央部件
@@ -126,6 +127,21 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.canvas_frame.setLayout(self.canvas_frame_layout)
 
         self.image_on_canvas = None
+
+    def _add_scroll(self):
+        # 创建一个滚动区域
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)  # 让滚动区域自动适应内容大小
+
+        self.scroll_area.setWidget(self.canvas)
+
+        # 设置滚动区域的视口，确保图片超过可视区域时出现滚动条
+        self.scroll_area.setViewport(self.canvas)
+
+        self.scroll_area.setWidgetResizable(True)  # 让滚动区域自动适应内容大小
+
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
     def _add_buttons(self):
         # 创建控制台部件
@@ -345,7 +361,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.network_clicks_spinbox.setEnabled(False)
             self.lbfgs_iters_label.setEnabled(False)
             self.lbfgs_iters_spinbox.setEnabled(False)
-
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:
