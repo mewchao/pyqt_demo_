@@ -194,27 +194,26 @@ class CanvasImage(QMainWindow):
         y = coords[0]
         x = coords[1]
 
-        self.per_scale = 1.0
-
         # 检查鼠标滚轮向下滚动的情况。它会根据不同的条件来执行缩小图像的操作
         delta = event.angleDelta().y()  # 获取滚轮滚动的垂直方向的增量
 
         # 根据滚动方向来确定缩放比例的变化
         if delta < 0:  # 向下滚动，缩小图像
-            print("delta")
-            print(delta)
-            self.per_scale /= self.__delta
-            print("per_scale")
-            print(self.per_scale)
+            self.per_scale = 0.9
+
+            # print("delta")
+            # print(delta)
+            # print("per_scale")
+            # print(self.per_scale)
 
 
         elif delta > 0:  # 向上滚动，放大图像
-            print("delta")
-            print(delta)
-            self.per_scale *= self.__delta
-            print("per_scale")
-            print(self.per_scale)
+            self.per_scale = 1.1
 
+            # print("delta")
+            # print(delta)
+            # print("per_scale")
+            # print(self.per_scale)
         # 传递缩放的中心点  self.per_scale=1.1
         self._change_pixmmap_scale(self.per_scale, x, y)
 
@@ -227,26 +226,27 @@ class CanvasImage(QMainWindow):
         if relative_scale * width < self.canvas.width() and relative_scale * height < self.canvas.height():
             return
 
-        # 计算缩放后的中心点坐标
-        center_x = x / relative_scale
-        center_y = y / relative_scale
-
         # 创建一个变换矩阵，按照正确的顺序进行平移、缩放和反向平移
         transform = QtGui.QTransform()
         # 将中心点 (center_x, center_y) 移动到坐标系统的原点，以便在之后的缩放操作中以这个点为中心进行缩放
-        transform.translate(center_x, center_y)
+        transform.translate(x, y)
         transform.scale(relative_scale, relative_scale)
-        transform.translate(-center_x, -center_y)
+        # transform.translate(-center_x, -center_y)
 
         # 使用变换矩阵对 QPixmap 进行缩放
         self.pixmap = self.pixmap.transformed(transform)
+        # 获取缩放中心点坐标
+        # print("transform.dx:",end="")
+        # print(transform.dx())
+        # print("transform.dy:",end="")
+        # print(transform.dy())
 
-        print("缩放一次")
-        print("_change_pixmmap_scale中")
-        print("未处理:")
-        print(x, y)
-        print("处理后")
-        print(center_x, center_y)
+        # print("缩放一次")
+        # print("_change_pixmmap_scale中")
+        # print("未处理:")
+        # print(x, y)
+        # print("处理后")
+        # print(center_x, center_y)
 
         # 设置图像到self.image_item上
         self.image_item.setPixmap(self.pixmap)
