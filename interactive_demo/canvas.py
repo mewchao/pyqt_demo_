@@ -1,4 +1,3 @@
-import math
 import os
 import sys
 
@@ -58,12 +57,6 @@ class MyEventFilter(QObject):
                 self.canvas_container.right_mouse_button_pressed(event)
             elif event.button() == Qt.MiddleButton:
                 self.canvas_container.right_mouse_button_pressed(event)
-        # 鼠标移动事件
-        elif event.type() == QEvent.MouseMove:
-            if event.buttons() == Qt.RightButton:
-                self.canvas_container.right_mouse_button_motion(event)
-            elif event.buttons() == Qt.MiddleButton:
-                self.canvas_container.right_mouse_button_motion(event)
         # 鼠标滚轮事件
         elif event.type() == QEvent.Wheel:
             self.canvas_container.wheel(event)
@@ -75,7 +68,6 @@ class CanvasImage(QMainWindow):
         super().__init__()
 
         self.scaled = None
-        # Zoommagnitude可以用来表示缩放操作的大小或比例
         self.__delta = 1.1
         self.new_scale = 1.0
         self.per_scale = 1.0
@@ -84,22 +76,6 @@ class CanvasImage(QMainWindow):
         self.canvas_frame = canvas_frame
         self.scene = QGraphicsScene()
         self.canvas = canvas
-        self.canvas.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.canvas.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        # 创建水平滚动条和垂直滚动条
-        self.hbar = AutoScrollBar(Qt.Horizontal, self)
-        self.vbar = AutoScrollBar(Qt.Vertical, self)
-
-        # 设置滚动条范围
-        self.hbar.setRange(0, 100)  # 根据您的需求设置范围
-        self.vbar.setRange(0, 100)  # 根据您的需求设置范围
-
-        self.canvas.setHorizontalScrollBar(self.hbar)
-        self.canvas.setVerticalScrollBar(self.vbar)
-
-        self.hbar.valueChanged.connect(self.__scroll_x)
-        self.vbar.valueChanged.connect(self.__scroll_y)
 
         self.container = None
         self._click_callback = None
@@ -121,10 +97,10 @@ class CanvasImage(QMainWindow):
             self.scene = QGraphicsScene()
             self.canvas.setScene(self.scene)
 
-            # 添加self.image_item到场景中
-            self.image_item = QGraphicsPixmapItem()
-            self.container = self.image_item
-            self.scene.addItem(self.image_item)
+            # 添加self.image_pixmap_item到场景中
+            self.image_pixmap_item = QGraphicsPixmapItem()
+            self.container = self.image_pixmap_item
+            self.scene.addItem(self.image_pixmap_item)
 
             # 获取当前图像的宽度和高度  # 计算等比例缩放后的新尺寸  # 目标尺寸  使用scaled方法进行等比例缩放  高度固定等比例缩放
             target_size = 1000
@@ -143,14 +119,8 @@ class CanvasImage(QMainWindow):
 
             self.pixmap = self.pixmap.scaled(new_width, new_height)
 
-            # layout = QVBoxLayout()
-            # layout.addWidget(self.scene)
-            # layout.addWidget(self.vbar)
-            # self.setLayout(layout)  # 设置布局为窗口的布局
-
-            # 设置图像到self.image_item上
-            self.image_item.setPixmap(self.pixmap)
-
+            # 设置图像到self.image_pixmap_item上
+            self.image_pixmap_item.setPixmap(self.pixmap)
 
     def reload_image(self, image, reset_canvas=True):
         self.__original_image = image.copy()
@@ -158,7 +128,6 @@ class CanvasImage(QMainWindow):
         self._show_image(self.__original_image)
 
     def grid(self, **kw):
-        """ Put CanvasImage widget on the parent widget """
         self.__imframe.grid(**kw)  # place CanvasImage widget on the grid
         self.__imframe.grid(sticky='nswe')  # make frame container sticky
         self.__imframe.rowconfigure(0, weight=1)  # make canvas expandable
@@ -207,19 +176,8 @@ class CanvasImage(QMainWindow):
         if delta < 0:  # 向下滚动，缩小图像
             self.per_scale = 0.9
 
-            # print("delta")
-            # print(delta)
-            # print("per_scale")
-            # print(self.per_scale)
-
-
         elif delta > 0:  # 向上滚动，放大图像
             self.per_scale = 1.1
-
-            # print("delta")
-            # print(delta)
-            # print("per_scale")
-            # print(self.per_scale)
         # 传递缩放的中心点  self.per_scale=1.1
         self._change_pixmmap_scale(self.per_scale, x, y)
 
@@ -237,25 +195,13 @@ class CanvasImage(QMainWindow):
         # 将中心点 (center_x, center_y) 移动到坐标系统的原点，以便在之后的缩放操作中以这个点为中心进行缩放
         transform.translate(x, y)
         transform.scale(relative_scale, relative_scale)
-        # transform.translate(-center_x, -center_y)
 
         # 使用变换矩阵对 QPixmap 进行缩放
         self.pixmap = self.pixmap.transformed(transform)
         # 获取缩放中心点坐标
-        # print("transform.dx:",end="")
-        # print(transform.dx())
-        # print("transform.dy:",end="")
-        # print(transform.dy())
 
-        # print("缩放一次")
-        # print("_change_pixmmap_scale中")
-        # print("未处理:")
-        # print(x, y)
-        # print("处理后")
-        # print(center_x, center_y)
-
-        # 设置图像到self.image_item上
-        self.image_item.setPixmap(self.pixmap)
+        # 设置图像到self.image_pixmap_item上
+        self.image_pixmap_item.setPixmap(self.pixmap)
 
     def left_mouse_button(self, event):
         if self._click_callback is None:
@@ -268,38 +214,22 @@ class CanvasImage(QMainWindow):
 
     def right_mouse_button_pressed(self, event):
 
-        # self._last_rb_click_time = time.time()
         self._last_rb_click_event = event
         coords = self._get_click_coordinates(self._last_rb_click_event)
         self._click_callback(is_positive=False, x=coords[0], y=coords[1])
-        # self.canvas.scan_mark(coords[0], coords[1])
-        print("def right_mouse_button_pressed(self, event):结束")
-
-    def right_mouse_button_motion(self, event):
-
-        move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
-                               (event.y - self._last_rb_click_event.y) ** 2)
-        if move_delta > 3:
-            self.canvas.scan_dragto(event.x, event.y, gain=1)
-            self.__show_image()  # zoom tile and show it on the canvas
 
     def outside(self, x, y):
-        """ Checks if the point (x,y) is outside the image area """
-        bbox = self.canvas.coords(self.container)  # get image area
+        bbox = self.canvas.coords(self.container)
         if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]:
-            return False  # point (x,y) is inside the image area
+            return False
         else:
-            return True  # point (x,y) is outside the image area
+            return True
 
-    # ================================================= Keys Callback ==================================================
     def __keystroke(self, event):
-        """ Scrolling with the keyboard.
-            Independent from the language of the keyboard, CapsLock, <Ctrl>+<key>, etc. """
         if event.state - self.__previous_state == 4:  # means that the Control key is pressed
             pass  # do nothing if Control key is pressed
         else:
             self.__previous_state = event.state  # remember the last keystroke state
-            # Up, Down, Left, Right keystrokes
             self.keycodes = {}  # init key codes
             if os.name == 'nt':  # Windows OS
                 self.keycodes = {

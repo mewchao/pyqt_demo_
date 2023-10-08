@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QScrollArea, QLabel
+from PyQt5.QtGui import QPainter
+from PyQt5.QtWidgets import QAction, QScrollArea, QLabel, QScrollBar, QGraphicsView
 from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
 
 from interactive_demo.canvas import CanvasImage
@@ -32,9 +33,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self._add_window()
         self._add_canvas()
         self._add_buttons()
-        # self._add_scroll()
         self.show()
-        print("self.show()")
 
     # 初始化应用程序的状态，包括一些布尔值、整数值、双精度浮点数以及字符串值的变量。
     # 这些变量似乎用于跟踪和控制应用程序的行为和用户界面的不同方面
@@ -127,21 +126,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.canvas_frame.setLayout(self.canvas_frame_layout)
 
         self.image_on_canvas = None
-
-    def _add_scroll(self):
-        # 创建一个滚动区域
-        self.scroll_area = QScrollArea(self)
-        self.scroll_area.setWidgetResizable(True)  # 让滚动区域自动适应内容大小
-
-        self.scroll_area.setWidget(self.canvas)
-
-        # 设置滚动区域的视口，确保图片超过可视区域时出现滚动条
-        self.scroll_area.setViewport(self.canvas)
-
-        self.scroll_area.setWidgetResizable(True)  # 让滚动区域自动适应内容大小
-
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
     def _add_buttons(self):
         # 创建控制台部件
