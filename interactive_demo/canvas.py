@@ -69,12 +69,13 @@ class CanvasImage(QMainWindow):
 
         self.scaled = None
         self.__delta = 1.1
-        self.new_scale = 1.0
+        self.wheel_scale = 1.0
         self.per_scale = 1.0
         self.__previous_state = 0
 
         self.canvas_frame = canvas_frame
         self.scene = QGraphicsScene()
+        self.original_pixmap = None
         self.canvas = canvas
 
         self.container = None
@@ -118,6 +119,7 @@ class CanvasImage(QMainWindow):
                 new_width = int(current_width * (1 / self.scaled))
 
             self.pixmap = self.pixmap.scaled(new_width, new_height)
+            self.original_pixmap = self.pixmap
 
             # 设置图像到self.image_pixmap_item上
             self.image_pixmap_item.setPixmap(self.pixmap)
@@ -136,10 +138,9 @@ class CanvasImage(QMainWindow):
     def _get_click_coordinates(self, event):
         # 获取鼠标事件在视图坐标系中的坐标
         pos = self.canvas.mapToScene(event.x(), event.y())
-
         x = pos.x()
         y = pos.y()
-
+        print(y * self.scaled, x * self.scaled)
         return y * self.scaled, x * self.scaled
 
     def _reset_canvas_offset(self):
@@ -174,12 +175,13 @@ class CanvasImage(QMainWindow):
 
         # 根据滚动方向来确定缩放比例的变化
         if delta < 0:  # 向下滚动，缩小图像
-            self.per_scale = 0.9
+            self.wheel_scale = 0.9 * self.wheel_scale
 
         elif delta > 0:  # 向上滚动，放大图像
-            self.per_scale = 1.1
+            self.wheel_scale = 1.1 * self.wheel_scale
+
         # 传递缩放的中心点  self.per_scale=1.1
-        self._change_pixmmap_scale(self.per_scale, x, y)
+        self._change_pixmmap_scale(self.wheel_scale, x, y)
 
     def _change_pixmmap_scale(self, relative_scale, x=0, y=0):
 
@@ -197,7 +199,7 @@ class CanvasImage(QMainWindow):
         transform.scale(relative_scale, relative_scale)
 
         # 使用变换矩阵对 QPixmap 进行缩放
-        self.pixmap = self.pixmap.transformed(transform)
+        self.pixmap = self.original_pixmap.transformed(transform)
         # 获取缩放中心点坐标
 
         # 设置图像到self.image_pixmap_item上
@@ -206,9 +208,7 @@ class CanvasImage(QMainWindow):
     def left_mouse_button(self, event):
         if self._click_callback is None:
             return
-
         coords = self._get_click_coordinates(event)
-        print(coords)
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
 

@@ -157,7 +157,6 @@ class InteractiveController:
         else:
             return None
 
-
     @property
     def is_incomplete_mask(self):
         return len(self.probs_history) > 0
