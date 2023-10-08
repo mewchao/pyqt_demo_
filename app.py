@@ -5,9 +5,9 @@ import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter
-from PyQt5.QtWidgets import QAction, QScrollArea, QLabel, QScrollBar, QGraphicsView
+from PyQt5.QtWidgets import QAction, QSlider, QLabel
 from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
+from pyqt5_plugins.examplebuttonplugin import QtGui
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
@@ -220,6 +220,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.lbfgs_iters_spinbox = QtWidgets.QSpinBox(self.brs_options_frame)
         self.lbfgs_iters_spinbox.setGeometry(220, 55, 60, 30)
 
+        # ======================================================================================
+
         # Predictions Threshold
         self.prob_thresh_frame = QtWidgets.QGroupBox("Predictions threshold", self.control_frame)
         self.prob_thresh_frame.setGeometry(10, 460 + 110, 375, 100)
@@ -228,7 +230,20 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.prob_thresh_slider.setGeometry(10, 30, 350, 30)
         self.prob_thresh_slider.setRange(0, 100)
         self.prob_thresh_slider.setValue(50)
+
+        self.prob_thresh_slider.setTickPosition(QSlider.TicksBelow)
+        self.prob_thresh_slider.setTickInterval(10)
+
+        # 再创建一个组件 放在滑轨的下方 然后给这个新的组件打上标签
+        self.prob_thresh_frame_second = QtWidgets.QGroupBox(self.prob_thresh_frame)
+        self.prob_thresh_frame_second.setGeometry(185, 65, 40, 40)
+
+        # 给新的组件打上标签
+        self.prob_thresh_label = QtWidgets.QLabel('10', self.prob_thresh_frame_second)
+        self.prob_thresh_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
+
         # self.prob_thresh_slider.valueChanged.connect(self._update_prob_thresh)
+        # ==================================================================================================
 
         # Alpha Blending Coefficient
         self.alpha_blend_frame = QtWidgets.QGroupBox("Alpha blending coefficient", self.control_frame)
@@ -238,7 +253,20 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.alpha_blend_slider.setGeometry(10, 30, 350, 30)
         self.alpha_blend_slider.setRange(0, 100)
         self.alpha_blend_slider.setValue(50)
+
+        self.alpha_blend_slider.setTickPosition(QSlider.TicksBelow)
+        self.alpha_blend_slider.setTickInterval(10)
+
+        # 再创建一个组件 放在滑轨的下方 然后给这个新的组件打上标签
+        self.alpha_blend_frame_second = QtWidgets.QGroupBox(self.alpha_blend_frame)
+        self.alpha_blend_frame_second.setGeometry(185, 65, 40, 40)
+
+        # 给新的组件打上标签
+        self.alpha_blend_label = QtWidgets.QLabel('10', self.alpha_blend_frame_second)
+        self.alpha_blend_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
         # self.alpha_blend_slider.valueChanged.connect(self._update_blend_alpha)
+
+        # ======================================================================================
 
         # Visualisation Click Radius
         self.click_radius_frame = QtWidgets.QGroupBox("Visualisation click radius", self.control_frame)
@@ -248,6 +276,18 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.click_radius_slider.setGeometry(10, 30, 350, 30)
         self.click_radius_slider.setRange(0, 7)
         self.click_radius_slider.setValue(3)
+
+        self.click_radius_slider.setTickPosition(QSlider.TicksBelow)
+        self.click_radius_slider.setTickInterval(1)
+
+        # 再创建一个组件 放在滑轨的下方 然后给这个新的组件打上标签
+        self.click_radius_frame_second = QtWidgets.QGroupBox(self.click_radius_frame)
+        self.click_radius_frame_second.setGeometry(185, 65, 40, 40)
+
+        # 给新的组件打上标签
+        self.click_radius_label = QtWidgets.QLabel('10', self.click_radius_frame_second)
+        self.click_radius_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
+
         # self.click_radius_slider.valueChanged.connect(self._update_click_radius)
 
     def _load_image_callback(self):
