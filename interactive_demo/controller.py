@@ -176,7 +176,6 @@ class InteractiveController:
         if self.image is None:
             return None
 
-        # 将当前结果掩码（self.result_mask）存储在results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
         # result_mask被更新过
         results_mask_for_vis = self.result_mask
 
@@ -185,11 +184,10 @@ class InteractiveController:
 
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh
-            # print("total_mask",end="")
-            # print(total_mask)
+
             results_mask_for_vis[np.logical_not(total_mask)] = 0
+
             # 将更新后的results_mask_for_vis和透明度（alpha_blend）传递给该函数，以生成包含总体掩码和点击标记的最终可视化图像
             vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
-        # print("vis",end="")
-        # print(vis)
+
         return vis

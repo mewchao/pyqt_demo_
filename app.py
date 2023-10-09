@@ -299,6 +299,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     def prob_thresh_slider_value_changed(self):
         value = self.prob_thresh_slider.value()
         self.state['prob_thresh'] = value / 10
+        self.controller.prob_thresh = self.state['prob_thresh']
         self.prob_thresh_label.setText(str(value / 10))
         self._update_image()
 
