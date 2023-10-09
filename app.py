@@ -85,13 +85,13 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.load_mask_action.setEnabled(False)  # Disable initially
         self.menubar.addAction(self.load_mask_action)
 
-        about_action = QAction('About', self)
-        about_action.triggered.connect(self._about_callback)
-        self.menubar.addAction(about_action)
+        self.about_action = QAction('About', self)
+        self.about_action.triggered.connect(self._about_callback)
+        self.menubar.addAction(self.about_action)
 
-        exit_action = QAction('Exit', self)
-        exit_action.triggered.connect(self.close)
-        self.menubar.addAction(exit_action)
+        self.exit_action = QAction('Exit', self)
+        self.exit_action.triggered.connect(self.close)
+        self.menubar.addAction(self.exit_action)
 
     # 这是整个窗口的布局
     def _add_window(self):
@@ -108,6 +108,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # 画布控件
         self.canvas_frame = QtWidgets.QGroupBox("Image", self)
+        self.canvas_frame.setStyleSheet(
+            "font-family: Arial; font-size: 23px; font-weight: bold;")
 
         self.canvas_frame_layout = QtWidgets.QGridLayout(self.canvas_frame)
         self.canvas_frame_layout.setContentsMargins(5, 5, 5, 5)
@@ -129,6 +131,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     def _add_buttons(self):
         # 创建控制台部件
         self.control_frame = QtWidgets.QGroupBox("Controls", self)
+        self.control_frame.setStyleSheet(
+            "font-family: Arial; font-size: 23px; font-weight: bold;")
         self.control_frame.setFixedSize(400, 1000)
 
         # 水平布局管理器 设置为 central_widget 的布局管理器
@@ -148,6 +152,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # control_frame的第一个区域---->点击区域
         self.clicks_options_frame = QGroupBox("Clicks management", self.control_frame)
+        self.clicks_options_frame.setStyleSheet(
+            "font-family: Arial; font-size: 23px; font-weight: bold;")
         self.clicks_options_frame.setFixedSize(375, 200)
         self.clicks_options_frame.setGeometry(10, 20, 375, 175)
 
@@ -158,17 +164,23 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.clicks_options_frame.setLayout(Clickmanagement_shorizontal_layout_H)
 
         self.finish_object_button = QtWidgets.QPushButton("Finish\nobject", self.clicks_options_frame)
-        self.finish_object_button.setGeometry(10, 20, 100, 150)
+        self.finish_object_button.setGeometry(10, 20, 100, 200)
+        self.finish_object_button.setStyleSheet(
+            "background-color: #B6D7A8;font-family: Arial; font-size: 23px; font-weight: bold;")
         self.finish_object_button.clicked.connect(self.controller.finish_object)
         self.finish_object_button.setEnabled(False)
 
-        self.undo_click_button = QtWidgets.QPushButton("Undo click", self.clicks_options_frame)
-        self.undo_click_button.setGeometry(10, 20, 100, 150)
+        self.undo_click_button = QtWidgets.QPushButton("Undo\n click", self.clicks_options_frame)
+        self.undo_click_button.setGeometry(10, 20, 100, 200)
+        self.undo_click_button.setStyleSheet(
+            "background-color: #FFE599;font-family: Arial; font-size: 23px; font-weight: bold;")
         self.undo_click_button.clicked.connect(self.controller.undo_click)
         self.undo_click_button.setEnabled(False)
 
-        self.reset_clicks_button = QtWidgets.QPushButton("Reset clicks", self.clicks_options_frame)
-        self.reset_clicks_button.setGeometry(10, 20, 100, 150)
+        self.reset_clicks_button = QtWidgets.QPushButton("Reset\n clicks", self.clicks_options_frame)
+        self.reset_clicks_button.setGeometry(10, 20, 100, 200)
+        self.reset_clicks_button.setStyleSheet(
+            "background-color: #EA9999;font-family: Arial; font-size: 23px; font-weight: bold;")
         self.reset_clicks_button.clicked.connect(self._reset_last_object)
         self.reset_clicks_button.setEnabled(False)
 
@@ -178,6 +190,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # ZoomIn Options
         self.zoomin_options_frame = QtWidgets.QGroupBox("ZoomIn options", self.control_frame)
+        self.zoomin_options_frame.setStyleSheet(
+            "font-family: Arial; font-size: 23px; font-weight: bold;")
         self.zoomin_options_frame.setFixedSize(375, 200)
         self.zoomin_options_frame.setGeometry(10, 20 + 175 + 35, 375, 175)
 
@@ -188,9 +202,13 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.zoomin_options_frame.setLayout(ZoomInoptions_shorizontal_layout_V)
 
         self.use_zoomin_checkbox = QtWidgets.QCheckBox("Use ZoomIn", self.zoomin_options_frame)
-        self.use_zoomin_checkbox.setGeometry(10, 20, 150, 20)
+        self.use_zoomin_checkbox.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
+        self.use_zoomin_checkbox.setGeometry(10, 30, 150, 20)
 
         self.fixed_crop_checkbox = QtWidgets.QCheckBox("Fixed crop", self.zoomin_options_frame)
+        self.fixed_crop_checkbox.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
         self.fixed_crop_checkbox.setGeometry(10, 50, 150, 20)
 
         ZoomInoptions_shorizontal_layout_V.insertWidget(0, self.use_zoomin_checkbox)
@@ -198,31 +216,41 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # BRS Options
         self.brs_options_frame = QtWidgets.QGroupBox("BRS options", self.control_frame)
+        self.brs_options_frame.setStyleSheet(
+            "font-family: Arial; font-size: 23px; font-weight: bold;")
         self.brs_options_frame.setGeometry(10, 460, 375, 100)
 
         # 在布局的第三个索引插入 brs_options_frame
         horizontal_layout_V.insertWidget(2, self.brs_options_frame)
 
         self.brs_mode_combo = QtWidgets.QComboBox(self.brs_options_frame)
+        self.brs_mode_combo.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
         self.brs_mode_combo.setGeometry(10, 38, 100, 30)
         self.brs_mode_combo.addItems(self.brs_modes)
 
         self.network_clicks_label = QtWidgets.QLabel("Network\nclicks", self.brs_options_frame)
-        self.network_clicks_label.setGeometry(130, 10, 150, 45)
+        self.network_clicks_label.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
+        self.network_clicks_label.setGeometry(170, 10, 150, 45)
 
         self.network_clicks_spinbox = QtWidgets.QSpinBox(self.brs_options_frame)
-        self.network_clicks_spinbox.setGeometry(130, 55, 60, 30)
+        self.network_clicks_spinbox.setGeometry(170, 55, 60, 30)
 
         self.lbfgs_iters_label = QtWidgets.QLabel("L-BFGS Max\nIterations", self.brs_options_frame)
-        self.lbfgs_iters_label.setGeometry(220, 10, 150, 45)
+        self.lbfgs_iters_label.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
+        self.lbfgs_iters_label.setGeometry(280, 10, 150, 45)
 
         self.lbfgs_iters_spinbox = QtWidgets.QSpinBox(self.brs_options_frame)
-        self.lbfgs_iters_spinbox.setGeometry(220, 55, 60, 30)
+        self.lbfgs_iters_spinbox.setGeometry(280, 55, 60, 30)
 
         # ======================================================================================
 
         # Predictions Threshold
         self.prob_thresh_frame = QtWidgets.QGroupBox("Predictions threshold", self.control_frame)
+        self.prob_thresh_frame.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
         self.prob_thresh_frame.setGeometry(10, 460 + 110, 375, 100)
 
         self.prob_thresh_slider = QtWidgets.QSlider(Qt.Horizontal, self.prob_thresh_frame)
@@ -250,6 +278,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # Alpha Blending Coefficient
         self.alpha_blend_frame = QtWidgets.QGroupBox("Alpha blending coefficient", self.control_frame)
+        self.alpha_blend_frame.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
         self.alpha_blend_frame.setGeometry(10, 460 + 110 + 110, 375, 100)
 
         self.alpha_blend_slider = QtWidgets.QSlider(Qt.Horizontal, self.alpha_blend_frame)
@@ -275,6 +305,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         # Visualisation Click Radius
         self.click_radius_frame = QtWidgets.QGroupBox("Visualisation click radius", self.control_frame)
+        self.click_radius_frame.setStyleSheet(
+            "font-family: Arial; font-size: 17px; font-weight: bold;")
         self.click_radius_frame.setGeometry(10, 460 + 110 + 110 + 110, 375, 100)
 
         self.click_radius_slider = QtWidgets.QSlider(Qt.Horizontal, self.click_radius_frame)
