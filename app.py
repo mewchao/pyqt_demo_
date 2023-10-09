@@ -96,7 +96,7 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
     # 这是整个窗口的布局
     def _add_window(self):
         self.setWindowTitle("Interactive_Demo_App")
-        self.setGeometry(0, 0, 1300, 1000)
+        self.setGeometry(600, 350, 1000, 1000)
 
         # 创建一个名为central_widget的QWidget，设置中央部件的大小为800x600像素 它将作为主窗口的中央部件，也就是主要的可见区域，设置为主窗口的中央部件
         self.central_widget = QWidget()
