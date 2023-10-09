@@ -242,7 +242,11 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.prob_thresh_label = QtWidgets.QLabel('10', self.prob_thresh_frame_second)
         self.prob_thresh_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
 
-        # self.prob_thresh_slider.valueChanged.connect(self._update_prob_thresh)
+        self.prob_thresh_label.setText(str(self.state['prob_thresh']))
+
+        # 连接滑块的值变化信号到槽函数
+        self.prob_thresh_slider.valueChanged.connect(self.prob_thresh_slider_value_changed)
+
         # ==================================================================================================
 
         # Alpha Blending Coefficient
@@ -253,18 +257,20 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.alpha_blend_slider.setGeometry(10, 30, 350, 30)
         self.alpha_blend_slider.setRange(0, 100)
         self.alpha_blend_slider.setValue(50)
-
-        self.alpha_blend_slider.setTickPosition(QSlider.TicksBelow)
         self.alpha_blend_slider.setTickInterval(10)
+        self.alpha_blend_slider.setTickPosition(QSlider.TicksBelow)
 
         # 再创建一个组件 放在滑轨的下方 然后给这个新的组件打上标签
         self.alpha_blend_frame_second = QtWidgets.QGroupBox(self.alpha_blend_frame)
         self.alpha_blend_frame_second.setGeometry(185, 65, 40, 40)
 
         # 给新的组件打上标签
-        self.alpha_blend_label = QtWidgets.QLabel('10', self.alpha_blend_frame_second)
+        self.alpha_blend_label = QtWidgets.QLabel('test', self.alpha_blend_frame_second)
         self.alpha_blend_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
-        # self.alpha_blend_slider.valueChanged.connect(self._update_blend_alpha)
+        self.alpha_blend_label.setText(str(self.state['alpha_blend']))
+
+        # 连接滑块的值变化信号到槽函数
+        self.alpha_blend_slider.valueChanged.connect(self.alpha_blend_slider_value_changed)
 
         # ======================================================================================
 
@@ -276,9 +282,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         self.click_radius_slider.setGeometry(10, 30, 350, 30)
         self.click_radius_slider.setRange(0, 7)
         self.click_radius_slider.setValue(3)
-
-        self.click_radius_slider.setTickPosition(QSlider.TicksBelow)
         self.click_radius_slider.setTickInterval(1)
+        self.click_radius_slider.setTickPosition(QSlider.TicksBelow)
 
         # 再创建一个组件 放在滑轨的下方 然后给这个新的组件打上标签
         self.click_radius_frame_second = QtWidgets.QGroupBox(self.click_radius_frame)
@@ -287,8 +292,23 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
         # 给新的组件打上标签
         self.click_radius_label = QtWidgets.QLabel('10', self.click_radius_frame_second)
         self.click_radius_label.setToolTip("This is a long text that should wrap to the next line if necessary.")
+        self.click_radius_label.setText(str(self.state['click_radius']))
 
-        # self.click_radius_slider.valueChanged.connect(self._update_click_radius)
+        # 连接滑块的值变化信号到槽函数
+        self.click_radius_slider.valueChanged.connect(self.click_radius_slider_value_changed)
+
+    def prob_thresh_slider_value_changed(self):
+        value = self.prob_thresh_slider.value()
+        self.prob_thresh_label.setText(str(value))
+
+    def alpha_blend_slider_value_changed(self):
+        value = self.alpha_blend_slider.value()
+        self.alpha_blend_label.setText(str(value))
+
+    def click_radius_slider_value_changed(self):
+        value = self.click_radius_slider.value()
+        self.click_radius_label.setText(str(value))
+
 
     def _load_image_callback(self):
         # 打开一个文件对话框，允许用户选择图像文件。用户可以在文件对话框中浏览文件系统，并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。选择的文件名存储在变量filename中
