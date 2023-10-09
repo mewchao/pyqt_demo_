@@ -179,22 +179,9 @@ class InteractiveController:
         # 将当前结果掩码（self.result_mask）存储在results_mask_for_vis变量中。这个掩码可能包含了已识别的对象的信息。
         # result_mask被更新过
         results_mask_for_vis = self.result_mask
-        # print("get_visualization中")
-        # print("self.image",end="")
-        # print(self.image)
-        # print("results_mask_for_vis", end="")
-        # print(results_mask_for_vis)
-        # print("alpha_blend", end="")
-        # print(alpha_blend)
-        # print("self.clicker.clicks_list", end="")
-        # print(self.clicker.clicks_list)
-        # print("click_radius", end="")
-        # print(click_radius)
-        # 使用draw_with_blend_and_clicks函数，将图像、掩码、透明度（alpha_blend）、点击列表（self.clicker.clicks_list）和点击半径（click_radius）传递给该函数，以生成带有混合效果和点击标记的图像
+
         vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
                                          clicks_list=self.clicker.clicks_list, radius=click_radius)
-        # print("self.probs_history", end="")
-        # print(self.probs_history)
 
         if self.probs_history:
             total_mask = self.probs_history[-1][0] > self.prob_thresh

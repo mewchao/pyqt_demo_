@@ -5,9 +5,8 @@ import numpy as np
 import torch
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QSlider, QLabel
+from PyQt5.QtWidgets import QAction, QSlider
 from PyQt5.QtWidgets import QHBoxLayout, QWidget, QVBoxLayout, QGroupBox, QGraphicsScene, QMessageBox
-from pyqt5_plugins.examplebuttonplugin import QtGui
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
