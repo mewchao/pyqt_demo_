@@ -227,8 +227,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         self.prob_thresh_slider = QtWidgets.QSlider(Qt.Horizontal, self.prob_thresh_frame)
         self.prob_thresh_slider.setGeometry(10, 30, 350, 30)
-        self.prob_thresh_slider.setRange(0, 100)
-        self.prob_thresh_slider.setValue(50)
+        self.prob_thresh_slider.setRange(0, 10)
+        self.prob_thresh_slider.setValue(5)
 
         self.prob_thresh_slider.setTickPosition(QSlider.TicksBelow)
         self.prob_thresh_slider.setTickInterval(10)
@@ -254,8 +254,8 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
         self.alpha_blend_slider = QtWidgets.QSlider(Qt.Horizontal, self.alpha_blend_frame)
         self.alpha_blend_slider.setGeometry(10, 30, 350, 30)
-        self.alpha_blend_slider.setRange(0, 100)
-        self.alpha_blend_slider.setValue(50)
+        self.alpha_blend_slider.setRange(0, 10)
+        self.alpha_blend_slider.setValue(5)
         self.alpha_blend_slider.setTickInterval(10)
         self.alpha_blend_slider.setTickPosition(QSlider.TicksBelow)
 
@@ -298,16 +298,21 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
 
     def prob_thresh_slider_value_changed(self):
         value = self.prob_thresh_slider.value()
-        self.prob_thresh_label.setText(str(value))
+        self.state['prob_thresh'] = value / 10
+        self.prob_thresh_label.setText(str(value / 10))
+        self._update_image()
 
     def alpha_blend_slider_value_changed(self):
         value = self.alpha_blend_slider.value()
-        self.alpha_blend_label.setText(str(value))
+        self.state['alpha_blend'] = value / 10
+        self.alpha_blend_label.setText(str(value / 10))
+        self._update_image()
 
     def click_radius_slider_value_changed(self):
         value = self.click_radius_slider.value()
+        self.state['click_radius'] = value
         self.click_radius_label.setText(str(value))
-
+        self._update_image()
 
     def _load_image_callback(self):
         # 打开一个文件对话框，允许用户选择图像文件。用户可以在文件对话框中浏览文件系统，并选择符合指定文件类型的图像文件（例如，jpg、jpeg、png、bmp、tiff）。选择的文件名存储在变量filename中
@@ -404,20 +409,6 @@ class InteractiveDemoApp(QtWidgets.QMainWindow):
             self.network_clicks_spinbox.setEnabled(False)
             self.lbfgs_iters_label.setEnabled(False)
             self.lbfgs_iters_spinbox.setEnabled(False)
-
-    def _update_prob_thresh(self, value):
-        if self.controller.is_incomplete_mask:
-            self.controller.prob_thresh = self.state['prob_thresh']
-            self._update_image()
-
-    def _update_blend_alpha(self, value):
-        self._update_image()
-
-    def _update_click_radius(self, *args):
-        if self.image_on_canvas is None:
-            return
-
-        self._update_image()
 
     # 当用户选择"NoBRS"模式时，文本框net_clicks_entry和lbfgs_iters_entry会被禁用，同时它们的标签也会被禁用。
     # 当用户选"BRS"模式时，如果net_clicks_entry中的文本是"INF"，它会被设置为"8"，然后这些文本框和标签会被启用。最后，调用reset_predictor方法以重置预测器的状态。

@@ -129,6 +129,10 @@ class CanvasImage(QMainWindow):
         self.__current_image = image.copy()
         self._show_image(self.__original_image)
 
+    def re_show_image(self):
+        self._show_image(self.__original_image)
+        print("self._show_image(self.__original_image)")
+
     def grid(self, **kw):
         self.__imframe.grid(**kw)  # place CanvasImage widget on the grid
         self.__imframe.grid(sticky='nswe')  # make frame container sticky
