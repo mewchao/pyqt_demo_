@@ -1,5 +1,4 @@
-# pyqt
-**目前主要在修改app.py和controller.py和canvas.py**
+# 可交互式遥感图像切割技术前端代码
 
 ### 总的目录结构
 
@@ -7,10 +6,10 @@
 pyqt_demo_
 |---assets # 编译配置
 |
-|---inetracrive_demo #  wrappers还没有动过
-| |---canvas.py #Display and zoom image还有很多要改。。。
-|-|--|----def reload_image(self, image, reset_can #原来的代码是 显示图片和监听图片  然后我把显示图片放在了app中 _show_imag
-|-|--|----class MyEventFilter(QObject):#处理事件的类，这里目前还无法监听到点击等等，然后调用相应的函数
+|---inetracrive_demo 
+| |---canvas.py 
+|-|--|----def 
+|-|--|----class 
 | |---controller.py 
 | |---wrappers.py 
 |
